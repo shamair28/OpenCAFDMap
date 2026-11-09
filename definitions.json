@@ -1,0 +1,26 @@
+{
+ "version": "2026.11.09.1",
+ "date": "2026-11-09T22:13:52Z",
+ "files": {
+  "data/contexts/G20_LCI_ECE_320i_11FF.xml": "f621bfff2f28901354255ca0aa8813ae2d19cf7c1374d978c8b16aa5b2cfe5ee",
+  "data/contexts/G20_LCI_US_330ixDrive_89FF.xml": "3bd5e3d83ecbd0503f18f3c57680cf1643e38f1bf9341c0bed12877df973592a",
+  "data/contexts/G20_LCI_US_M340ixDrive_43FF.xml": "72ae264afa8527e5ecd138636e55dccfb1b0ba633b1d6e4bcfd70df539e778a3",
+  "data/contexts/G21_LCI_ECE_318i_11FY.xml": "a3e430b168f5601ef6359b3a1e870eb5437e63782d36e44b631f0148224f8f27",
+  "data/ecu_cafd.tsv": "03fb0c2c20cf4e620229fda0701cf1fc6af68cb41d645ce74645a95f3fd5fe41",
+  "data/ecu_extra.tsv": "2a4260a41278913b85f49426f65fb2f7bd3798974dc5fd54f8f6c9ab3d4843f0",
+  "data/fp_categories.tsv": "d3bd8085e699a3d29c897a442a4073ec7a178f5147e8f20f85c403e3d6f08156",
+  "data/fp_crits_curated.tsv": "553af8bff8ca5241357dd6098de5c19a3cfe1e6709699a4eeb656ff0ec1ca35a",
+  "data/fp_crits_typekey.tsv": "7059dd02d49565726cbbdeaf2a293379ea1b86993a4e6983c3d6e46b8db42e24",
+  "data/fp_crits_verified.tsv": "cd75577aa1ddfb88a74123ae011e457dedd7d35a5edb2152932e97e9bc356f87",
+  "definitions/README.md": "1ce00f87aa017a828aeda184be77247759d865b5541d7a27da9fd949e43cb5a9",
+  "names/BDC_BODY3.tsv": "eb5e34de145aea9570b9a0896e8f0a0f6a32318b367a8840dc8a6ea75ff76350",
+  "names/DKOMBI4.tsv": "81c58ce0da73954795fff0fd338c442832f470a16909d1a610f70bf0d07860e3",
+  "names/DME_BAC2.tsv": "5fd737cd209d53f2f1a4b4de642c663b8ca71d8c8f847bc259b3b83f79dcee9f",
+  "names/FLM2.tsv": "f752fa8813fc556c151c7234b82abab0b6a932caf021c8c5007986ea891ce32a",
+  "names/FZD2.tsv": "0589c4c26ab74e11e15e520cca186438b1f88c947d15afec1bf243e1fa76e2ee",
+  "names/HU_MGU.tsv": "2630a6506e06635b70e66dd598a11cd4ecefee2427f99ab69748f657343a7e29",
+  "names/LICENSE": "03a08915429460f4f4af94ed73849e1adab9ebf94d2d56e7530c9d7ee0a0612d",
+  "names/README.md": "ba59efbc7a40c2dfdeb718871b60af4e31c1ea3ba47d137279722d75733d9f2a",
+  "names/legacy_FLM2.tsv": "e85a8655013cc6bfeef6d9d34ceccd6e4cc0b84ebbd053897571af4913bdbece"
+ }
+}

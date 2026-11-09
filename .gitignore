@@ -1,0 +1,22 @@
+# Everything built from your psdzdata or from your car stays local
+workspace/
+config.json
+
+# never commit these, even by accident
+*.sqlite
+*.sqlite-journal
+*.db
+*.xml.gz
+*.cod
+*.ncd
+*.caf
+*.fap*
+names_cheats.tsv
+my_names.tsv
+# (contributed definition XMLs and cheat sheets belong in definitions/ - ocm/check_names.py
+#  rejects decrypted psdzdata files and VINs there)
+
+__pycache__/
+*.pyc
+.vscode/
+.idea/

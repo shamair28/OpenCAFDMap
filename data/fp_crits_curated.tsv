@@ -1,0 +1,11 @@
+# crit	cat	label	short   (curated, unverified fallback labels; shown with a trailing ?)
+4660	11	Y - Battery Electric Vehicle (BEV)	Y?
+2101	13	B48B20 - 2.0L 4-Cyl Turbo Petrol (B48B20M1 / B48B20O1 / B48B20O2)	B48B20?
+2102	13	B46B20O1 - 2.0L 4-Cyl Turbo Petrol SULEV (330i / 430i US)	B46B20O1?
+4661	13	XD5141O0 - Single/Dual Electric Motor BEV (i4 eDrive35 / eDrive40 / xDrive40)	XD5141O0?
+4706	13	XD5151T0 - Dual Electric Motor M Performance BEV (i4 M50)	XD5151T0?
+663	23	BEV - Battery Electric Vehicle (i3 / i4)	BEV?
+2353	25	01 - Differentiation 01 (FZD_01)	01?
+2941	25	00 - Standard Vehicle Differentiation (FZD_00)	00?
+3367	35	U0 - Base Engine Generation (TU0)	U0?
+3372	35	U3 - 3rd Engine Technical Update (TU3)	U3?

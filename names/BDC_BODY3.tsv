@@ -1,0 +1,160 @@
+# Open CAFD Map community names. Tab separated, UTF-8. One row = one name, version independent.
+# cafd_id  address  start  end  mask  value_hex  name  comment
+#  - group name:    start/end/mask/value_hex empty
+#  - function name: value_hex empty      - value name: all columns
+#  - comment-only function row: name empty, comment set
+# Say where a name comes from in the comment (screenshot, BimmerCode diff, table, ...).
+# --- from BimmerCode backup diffs (2026-10), cross-checked with cheat sheets ---
+00007083	3221	9	9	11111111b			Sport+ mode (BDC, 1 of 2): BimmerCode change 2026-10-02 18:54; jokinawa: [1/2] Enable Sport Plus Mode; pair with MGU 3E52 3008 B0 FES_SPORT_EXPERT
+# --- BDC 3221 PfFesMaster: BMW names (screenshot tree, offset-corrected) + drive-mode IDs (jokinawa) ---
+00007083	3221					PfFesMaster	group name: screenshot + jokinawa/JPSaid G20 table
+00007083	3221	0	0	01100000b		FES_MDRIVE	from screenshot tree; unverified (same tool mis-placed other FES names)
+00007083	3221	0	0	01100000b	01	mdrive_aktiv	
+00007083	3221	0	0	10000000b		UNBELEGT	from screenshot tree; unverified
+00007083	3221	3	3	11111111b		FesPiaDefaultSportWorldMode	BMW name from a mapped E-Sys tree (screenshot); that tool placed the FES block 15 bytes late, corrected using jokinawa's byte-exact names (bytes 4,5,7,12)
+00007083	3221	6	6	11111111b		FesPiaDefaultAdaptiveWorldMode	BMW name from a mapped E-Sys tree (screenshot); that tool placed the FES block 15 bytes late, corrected using jokinawa's byte-exact names (bytes 4,5,7,12)
+00007083	3221	13	13	11111111b		FesComfortWorldMode2	BMW name from a mapped E-Sys tree (screenshot); that tool placed the FES block 15 bytes late, corrected using jokinawa's byte-exact names (bytes 4,5,7,12)
+00007083	3221	14	14	11111111b		FesEcoWorldMode0	BMW name from a mapped E-Sys tree (screenshot); that tool placed the FES block 15 bytes late, corrected using jokinawa's byte-exact names (bytes 4,5,7,12)
+00007083	3221	3	3	11111111b	01	mode Sport	
+00007083	3221	3	3	11111111b	02	mode Sport+ (SportExpert)	
+00007083	3221	3	3	11111111b	03	mode Sport Individual	
+00007083	3221	4	4	11111111b	04	mode Comfort	
+00007083	3221	4	4	11111111b	05	mode Comfort+ (ComfortPlus)	
+00007083	3221	5	5	11111111b	07	mode Eco Pro	
+00007083	3221	5	5	11111111b	09	mode Eco Pro Individual	
+00007083	3221	6	6	11111111b	0A	mode Adaptive	
+00007083	3221	7	7	11111111b	04	mode Comfort	
+00007083	3221	7	7	11111111b	07	mode Eco Pro	
+00007083	3221	8	8	11111111b	01	mode Sport	
+00007083	3221	8	8	11111111b	04	mode Comfort	
+00007083	3221	9	9	11111111b	02	mode Sport+ (SportExpert)	
+00007083	3221	10	10	11111111b	03	mode Sport Individual	
+00007083	3221	11	11	11111111b	04	mode Comfort	
+00007083	3221	12	12	11111111b	05	mode Comfort+ (ComfortPlus)	
+00007083	3221	14	14	11111111b	07	mode Eco Pro	
+00007083	3221	16	16	11111111b	09	mode Eco Pro Individual	
+00007083	3221	17	17	11111111b	0A	mode Adaptive	
+# --- group names from the jokinawa / JPSaid 'BMW G20 CODING' table (image) ---
+000044ED	3510					PwFunction	group name from jokinawa/JPSaid G20 coding table
+00007083	3075					LceMaster	group name from jokinawa/JPSaid G20 coding table
+00007083	3040					VaMaster	group name from jokinawa/JPSaid G20 coding table
+# --- BDC_BODY3 group names from BimmerCode expert mode (screenshots 2026-11-09) ---
+00007083	3000					EcuHwConfiguration	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3001					EnergyManager	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3002					DemDtcInhibition	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3003					ComAdapterNetworkDtc	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3005					BffEPM	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3006					BfLINTeilnetz	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3020					TcMaster	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3022					TcIntegration	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3024					Batteryguard	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3030					KeyManager	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3031					CaIntegration	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3041					ClIntegration	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3042					SmoParameterSet	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3070					LceConfiguration	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3072					LwrDriver	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3073					LciMaster	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3080					WipeWashMaster	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3090					HcSeatHeating	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3091					HcArmrestHeating	group name from BimmerCode BDC_BODY3 expert mode
+00007083	30A0					AirConditioning	group name from BimmerCode BDC_BODY3 expert mode
+00007083	30C0					ElectricSteeringWheelAdjust	group name from BimmerCode BDC_BODY3 expert mode
+00007083	30D0					RemoteControlMaster	group name from BimmerCode BDC_BODY3 expert mode
+00007083	30D1					RemoteControlIntegration	group name from BimmerCode BDC_BODY3 expert mode
+00007083	30D2					NfcRemoteControl	group name from BimmerCode BDC_BODY3 expert mode
+00007083	30D3					WcaWirelessChargingAblage	group name from BimmerCode BDC_BODY3 expert mode
+00007083	30E0					Transponder	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3100					PfHorn	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3101					PfFuelLevelIndicator	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3105					PfCoolantLevel	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3110					PfExternalMirrorMaster	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3111					PfLoadAreaCoverSunBlind	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3120					PfInternalMirror	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3130					PfRainLightSensor	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3131					Beltassist	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3140					PfLinSZL	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3141					PfLinMFL	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3142					PfLinLRE	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3143					PfLinHOD	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3144					Thermocupholder	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3150					PfSzt	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3190					PfSteeringWheelPaddles	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3200					SfSdServiceData	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3210					SfSvdVcmGlobal	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3420					PfSarahMaster	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3422					PfHeightSensor	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3423					PfBeAudio	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3424					PfFesCoordInt	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3425					PfBeMiko	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3426					SvLin	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3427					fEPM	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3450					Others_1	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3451					Others_2	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3452					KDS2	group name from BimmerCode BDC_BODY3 expert mode
+00007083	3453					RSRS	group name from BimmerCode BDC_BODY3 expert mode
+000017BD	3500					FusiStart	group name from BimmerCode BDC_BODY3 expert mode
+000017BD	3501					LceFuSiConfiguration	group name from BimmerCode BDC_BODY3 expert mode
+000017BD	3502					WishWashFuSi	group name from BimmerCode BDC_BODY3 expert mode
+000017BD	3503					FusiHwConfiguration	group name from BimmerCode BDC_BODY3 expert mode
+000017BD	3504					SafeMech	group name from BimmerCode BDC_BODY3 expert mode
+000017BD	3505					TcmRsu	group name from BimmerCode BDC_BODY3 expert mode
+000017BD	350A					FuSiOthers	group name from BimmerCode BDC_BODY3 expert mode
+000017BD	350B					FusiEnd	group name from BimmerCode BDC_BODY3 expert mode
+000044ED	3512					PwDriverBlockFront	group name from BimmerCode BDC_BODY3 expert mode
+000044ED	3513					PwDriverBlockRear	group name from BimmerCode BDC_BODY3 expert mode
+000044ED	3516					TL_ID	group name from BimmerCode BDC_BODY3 expert mode
+00001DF8	3530					LaMaster1	group name from BimmerCode BDC_BODY3 expert mode
+00001DF8	3531					LaMaster2	group name from BimmerCode BDC_BODY3 expert mode
+00001DF8	3532					LaMaster3	group name from BimmerCode BDC_BODY3 expert mode
+00001DF8	3533					LaMaster4	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3600					LciBananaProfiles	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3601					LicLciOutputChannels	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3602					LicLciFeatures	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3603					LicLciLogLamp2PhysLampData	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3604					LicLciLogLamp2PhysLampIndex	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3605					LicLciNiveauOverrideIndex	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3606					LicLciVersionData	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3607					LicLciBrightnessFormulas	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3608					LicLciBrightnessLibrary	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3609					LicLciBusTopology	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	360A					LicLciColorLibrary	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	360B					LicLciColorOverrideData	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	360C					LicLciColorOverrideIndex	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	360D					LicLciColorProfiles	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	360E					LicLciDirectlyConnectedDeviceData0	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	360F					LciFunctionControl	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3610					LicLciProtocol2Banana	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3612					LicLciNiveauOverrideData0	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3613					LicLciNiveauOverrideData1	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3614					LicLciPhysLampData0	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3615					LicLciPhysLampData1	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3616					LicLciMostCommonConfiguredColors	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3617					LicLciMostCommonConfiguredRamps	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3618					LicLciRampOverridesIndex	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	3619					LicLciRampOverridesData0	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	361A					LicLciScenarioLibraryIndex	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	361B					LicLciScenarioLibraryData0	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	361C					LicLciScenarioLibraryData1	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	361E					LicLciInitialRampTimesFiLin	group name from BimmerCode BDC_BODY3 expert mode
+000051DD	361F					LicLciHyakudanaProfiles	group name from BimmerCode BDC_BODY3 expert mode
+00004694	3645					CassConfigParameters	group name from BimmerCode BDC_BODY3 expert mode
+00004694	3646					CassDataBlock_0	group name from BimmerCode BDC_BODY3 expert mode
+00004694	3647					CassDataBlock_1	group name from BimmerCode BDC_BODY3 expert mode
+00004694	3648					CassDataBlock_2	group name from BimmerCode BDC_BODY3 expert mode
+00004694	3649					CassDataBlock_3	group name from BimmerCode BDC_BODY3 expert mode
+00004694	364A					CassDataBlock_4	group name from BimmerCode BDC_BODY3 expert mode
+00004694	364B					CassDataBlock_5	group name from BimmerCode BDC_BODY3 expert mode
+00004694	364C					CassDataBlock_6	group name from BimmerCode BDC_BODY3 expert mode
+00004694	364D					CassDataBlock_7	group name from BimmerCode BDC_BODY3 expert mode
+00004694	364E					CassDataBlock_8	group name from BimmerCode BDC_BODY3 expert mode
+00004694	364F					CassDataBlock_9	group name from BimmerCode BDC_BODY3 expert mode
+00005665	3700					LceOutputChannels	group name from BimmerCode BDC_BODY3 expert mode
+00005665	3701					LceBananaProfiles	group name from BimmerCode BDC_BODY3 expert mode
+00005665	3702					LicFeatures	group name from BimmerCode BDC_BODY3 expert mode
+00005665	3703					LicNiveauOverrideIndex	group name from BimmerCode BDC_BODY3 expert mode
+00005665	3704					LicNiveauOverrideData0	group name from BimmerCode BDC_BODY3 expert mode
+00005665	3705					LicNiveauOverrideData1	group name from BimmerCode BDC_BODY3 expert mode
+00005665	3706					LicLogLamp2PhysLampIndex	group name from BimmerCode BDC_BODY3 expert mode
+00005665	3707					LicLogLamp2PhysLampData	group name from BimmerCode BDC_BODY3 expert mode
+00005665	3708					LicVersionData	group name from BimmerCode BDC_BODY3 expert mode

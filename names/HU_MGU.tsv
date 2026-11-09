@@ -1,0 +1,17 @@
+# Open CAFD Map community names. Tab separated, UTF-8. One row = one name, version independent.
+# cafd_id  address  start  end  mask  value_hex  name  comment
+#  - group name:    start/end/mask/value_hex empty
+#  - function name: value_hex empty      - value name: all columns
+#  - comment-only function row: name empty, comment set
+# Say where a name comes from in the comment (screenshot, BimmerCode diff, table, ...).
+# --- from BimmerCode backup diffs (2026-10), cross-checked with cheat sheets ---
+00003E52	3000	31	31	00110000b			DRL selectable in Lights menu: BimmerCode change 2026-10-02 18:49; value 02 is the SA8TN value (Daytime driving lights selectable by Lights menu)
+00003E52	3002	0	0	00001111b			Sound system type: BimmerCode change 2026-10-02 18:49: 01 HiFi SA676, 02 Harman Kardon SA688, 03 Bowers & Wilkins (per user, from BimmerCode)
+00003E52	3002	0	0	00001111b	01	HiFi (SA676)	
+00003E52	3002	0	0	00001111b	02	Harman Kardon (SA688)	
+00003E52	3002	0	0	00001111b	03	Bowers & Wilkins	
+# --- group names from the jokinawa / JPSaid 'BMW G20 CODING' table (image) ---
+00003E52	300A					SARAH	group name from jokinawa/JPSaid G20 coding table
+00003E52	300B					PARKEN	group name from jokinawa/JPSaid G20 coding table
+00003E52	3000					HMI_SPEECH	group name from jokinawa/JPSaid G20 coding table
+00003E52	3008					FES	group name from jokinawa/JPSaid G20 coding table

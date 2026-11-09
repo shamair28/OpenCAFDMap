@@ -1,0 +1,32 @@
+# crit	cat	label	evidence (E-Sys PsdzLogic.generateFP on synthetic FAs, I-step S18A-26-07-560, type keys from ISTA XEP_VEHICLES)
+4	0	AWD	G81 / 89FF (xDrive)
+308	0	RWD	33FF 11FF 11FY 21FH 13HJ
+3276	1	G20	33FF 11FF 20FF 89FF
+3277	1	G28	21FH 11FH 41BE
+3278	1	G21	11FY 12FY
+4184	1	G80	13HJ 11HJ 12HJ
+5248	1	G81	21GB 22GB
+166	4	LIM	G20 G28 G80
+184	4	TOU	G21 G81
+167	7	LL	left-hand drive
+176	7	RL	right-hand drive
+142	11	petrol	320i 318i 330i M3
+154	11	diesel	320Ld
+2610	11	PHEV	330e
+155	17	ECE	EUR market type keys
+186	17	US	USA market type keys
+531	19	LWB	G28 long wheelbase
+532	19	SWB	standard wheelbase
+1787	23	hybrid	330e
+1789	23	non-hybrid	all others
+4722	38	pre-LCI	G28 41BE timeCriteria 0320 (lifecycle BAS)
+4724	38	LCI	all LZI1 type keys (lifecycle LZI1)
+5500	39	non-M	G20 G21 G28
+5501	39	M	G80 G81
+3983	1	G22	11HB 11AP
+3984	1	G23	21DB 11AT
+4054	1	G26	11HC 11AV
+4182	1	G82	11HK 31AZ
+4183	1	G83	41BA 31BA
+151	4	COU	G22 G26 G82
+146	4	CAB	G23 G83

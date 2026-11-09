@@ -1,0 +1,12 @@
+# Shared definitions are versioned by SHA-256 (definitions.json), so they must be byte-identical on
+# every OS: no line-ending conversion in these folders.
+names/** -text
+definitions/** -text
+data/** -text
+definitions.json -text
+
+# Windows batch files need CRLF
+*.bat text eol=crlf
+*.py text eol=lf
+*.js text eol=lf
+*.md text eol=lf

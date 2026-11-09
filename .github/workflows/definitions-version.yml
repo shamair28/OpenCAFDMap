@@ -1,0 +1,28 @@
+# After every merge to main that changes shared definitions, bump definitions.json (version + file
+# hashes). The launcher's "Check for updates" compares against this file.
+name: definitions version
+on:
+  push:
+    branches: [main]
+    paths: ["names/**", "definitions/**", "data/**"]
+permissions:
+  contents: write
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python ocm/check_names.py
+      - run: python ocm/defs_manifest.py --bump
+      - name: commit definitions.json
+        run: |
+          if ! git diff --quiet -- definitions.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add definitions.json
+            git commit -m "definitions $(python -c 'import json;print(json.load(open("definitions.json"))["version"])')"
+            git push
+          fi

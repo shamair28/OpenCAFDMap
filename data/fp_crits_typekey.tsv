@@ -1,0 +1,65 @@
+# crit	cat	label	evidence (E-Sys generateFP for every ISTA G2x type key; label = ISTA attribute whose values match the crit's type keys exactly)
+4	0	AWD	Power train exact over 168/387 type keys
+308	0	RWD	Power train exact over 219/387 type keys
+3276	1	G20	Development code exact over 117/387 type keys
+3277	1	G28	Development code exact over 19/387 type keys
+3278	1	G21	Development code exact over 41/387 type keys
+3983	1	G22	Development code exact over 44/387 type keys
+3984	1	G23	Development code exact over 37/387 type keys
+4054	1	G26	Development code exact over 69/387 type keys
+4182	1	G82	Development code exact over 27/387 type keys
+4183	1	G83	Development code exact over 6/387 type keys
+4184	1	G80	Development code exact over 21/387 type keys
+5248	1	G81	Development code exact over 6/387 type keys
+146	4	CAB	Body exact over 43/387 type keys
+151	4	COU	Body exact over 140/387 type keys
+166	4	LIM	Body exact over 157/387 type keys
+184	4	TOU	Body exact over 47/387 type keys
+167	7	LL	Steering exact over 269/387 type keys
+176	7	RL	Steering exact over 118/387 type keys
+154	11	fuel=D	Engine fuel type exact over 92/387 type keys
+1382	11	BEV	Engine exact over 24/387 type keys
+2610	11	hyb=PHEV	Hybrid identifier exact over 39/387 type keys
+3181	11	eng=B42	Engine exact over 1/387 type keys
+174	12	power=O	Engine performance class exact over 182/387 type keys
+185	12	eng8=B47D20U1	Engine 8-character exact over 15/387 type keys
+292	12	power=M	Engine performance class exact over 92/387 type keys
+294	12	power=T	Engine performance class exact over 74/387 type keys
+4487	12	BEV	Engine exact over 24/387 type keys
+2074	13	eng=B47	Engine exact over 53/387 type keys
+2103	13	eng=B58	Engine exact over 46/387 type keys
+2241	13	eng=B57	Engine exact over 39/387 type keys
+2366	13	AE designation=XB1141M1|XB1141O1	AE designation exact over 32/387 type keys
+2688	13	AE designation=XB1142O1	AE designation exact over 7/387 type keys
+2838	13	eng8=B48B16M0	Engine 8-character exact over 6/387 type keys
+3422	13	eng=B42	Engine exact over 1/387 type keys
+3489	13	eng=S58	Engine exact over 68/387 type keys
+4491	13	AE designation=XE2A02N0	AE designation exact over 10/387 type keys
+4493	13	HEAT 8-digit=HA0001N0	HEAT 8-digit exact over 14/387 type keys
+155	17	mkt=EUR	National-market version exact over 318/387 type keys
+186	17	mkt=USA	National-market version exact over 69/387 type keys
+531	19	G28	Development code exact over 19/387 type keys
+1787	23	hyb=PHEV	Hybrid identifier exact over 39/387 type keys
+1789	23	hyb=NOHY	Hybrid identifier exact over 324/387 type keys
+3757	23	BEV	Engine exact over 24/387 type keys
+2919	25	model=M3 CS|M4 CS|M4 CSL	Sales designation exact over 11/387 type keys
+4436	25	basetype=41BE|73AZ	Grundtyp exact over 2/387 type keys
+5531	25	ctrl=81AZ	Control type exact over 2/387 type keys
+521	28	plant=CHN	Country of assembly exact over 22/387 type keys
+2924	28	plant=DEU	Country of assembly exact over 315/387 type keys
+3405	28	plant=MEX	Country of assembly exact over 50/387 type keys
+2944	34	hyb=NOHY	Hybrid identifier exact over 324/387 type keys
+2947	34	eRange=ERW_M	Electrical range exact over 5/387 type keys
+4492	34	eRange=SE026	Electrical range exact over 6/387 type keys
+4494	34	eRange=SE027	Electrical range exact over 16/387 type keys
+4531	34	eRange=SP041	Electrical range exact over 22/387 type keys
+4568	34	eRange=SE036	Electrical range exact over 1/387 type keys
+4569	34	eRange=SE037	Electrical range exact over 1/387 type keys
+5341	34	eRange=SP051	Electrical range exact over 12/387 type keys
+3368	35	engRev=1	Engine upgrade exact over 222/387 type keys
+3369	35	engRev=2	Engine upgrade exact over 65/387 type keys
+4722	38	BAS	Lebenszyklus exact over 145/387 type keys
+4724	38	LZI1	Lebenszyklus exact over 242/387 type keys
+5499	39	sport=AL	Sportausführung exact over 16/387 type keys
+5501	39	sport=MS	Sportausführung exact over 60/387 type keys
+5502	39	sport=PA	Sportausführung exact over 19/387 type keys

@@ -1,0 +1,5 @@
+# ecu	cafd_id	source (ECU names from evidence outside KIS target SVTs)
+HU_MGU (MGU21)	00003E52	BimmerCode backup diag 0x63 + FSC apps 0x01C9/01CC (MGU21)
+IHKA4	000051C9	jokinawa/JPSaid G20 coding table (Module column)
+DKOMBI4	00004508	jokinawa/JPSaid G20 coding table (Module column)
+SAS2	000042C1	jokinawa/JPSaid G20 coding table (Module column)
