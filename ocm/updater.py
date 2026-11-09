@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config  # noqa: E402
 import defs_manifest as dm  # noqa: E402
 
-DEFAULT_REPO = ""          # set to "<owner>/OpenCAFDMap" when the project is published
+DEFAULT_REPO = "shamair28/OpenCAFDMap"   # forks: point this (or "Update source" in the launcher) at yours
 DEFAULT_BRANCH = "main"
 MAX_ZIP = 300 * 1024 * 1024
 UA = {"User-Agent": "OpenCAFDMap-updater"}
