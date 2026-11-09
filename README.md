@@ -9,6 +9,13 @@ Current psdzdata ships CAFDs with every FDL name trimmed to `.`. E-Sys then show
 - **Contributed definition XMLs.** `definitions\` holds definition files and cheat sheets people have shared. Their names are merged in the same way. A contributed definition is also used directly when your psdzdata doesn't have that CAFD version.
 - **BMW-style placeholders** for everything not named yet: `<Group>_<start>_<end>_<mask>`, e.g. `PfFesMaster_9_9_255`.
 
+### Before / after
+The same FLM2 NCD (CAFD 00006DF0) in E-Sys's FDL-Editor, first in stock E-Sys, then in E-Sys started from the Open CAFD Map launcher:
+
+| Stock E-Sys | With Open CAFD Map |
+|---|---|
+| ![Stock E-Sys: every group, function and value is "."](docs/images/before.png) | ![With Open CAFD Map: groups, functions and values are named](docs/images/after.png) |
+
 It also includes a **BimmerCode Backup Editor**: edit parameters inside BimmerCode iOS backups and write them out as new backups to restore from the phone.
 
 > Open CAFD Map is not affiliated with BMW. The project doesn't ship psdzdata, decrypted CAFDs or a coding database: those are built locally from your own E-Sys/psdzdata and stay in your `workspace\` folder. Contributed files in `definitions\` come from their contributors. Coding a car is at your own risk.

@@ -2,6 +2,7 @@
 # hashes). The launcher's "Check for updates" compares against this file.
 name: definitions version
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths: ["names/**", "definitions/**", "data/**"]

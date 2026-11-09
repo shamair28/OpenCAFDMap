@@ -1,5 +1,6 @@
 name: check contributions
 on:
+  workflow_dispatch:
   pull_request:
     paths: ["names/**", "definitions/**", "ocm/check_names.py"]
   push:
