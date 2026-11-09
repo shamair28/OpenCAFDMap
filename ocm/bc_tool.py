@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 r"""Edit BimmerCode backups (.cod) parameter-by-parameter and repackage them as NEW backups.
 
-Workspace: <Open CAFD Map workspace>/bimmercode (set paths in the launcher)
+Workspace: <Open CAFD Map workspace>/bimmercode (set paths in OpenLauncher)
   originals\   copies of your BimmerCode backups. Never modified; `init` copies, `check` verifies.
   decoded\     readable dump per backup (.txt) + raw blocks (.json)
   edits\       edit files for `apply` (see edits\EXAMPLE.tsv)
@@ -327,7 +327,7 @@ def cmd_init(a):
     con = db()
     src = a.folder or SRC
     if not src or not os.path.isdir(src):
-        sys.exit("BimmerCode backups folder not set or missing: set it in the launcher (or pass a folder)")
+        sys.exit("BimmerCode backups folder not set or missing: set it in OpenLauncher (or pass a folder)")
     n = 0
     for p in glob.glob(os.path.join(src, "*.cod")):
         dst = os.path.join(ORIG, os.path.basename(p))

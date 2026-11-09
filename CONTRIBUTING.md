@@ -44,7 +44,7 @@ Names don't depend on the software version. A row applies to every version of th
 Move rows you're confident about from `my_names.tsv` into the right `names\<ECU>.tsv` (create the file if the ECU has none yet) and open a pull request.
 
 ## Before you open a pull request
-1. Press **Check contributions** in the launcher (or run `python ocm\check_names.py --db`). There must be no errors, and your rows should match your DB.
+1. Press **Check contributions** in OpenLauncher (or run `python ocm\check_names.py --db`). There must be no errors, and your rows should match your DB.
 2. **Names and definition files only.** Never commit:
    - psdzdata or decrypted psdzdata files (BMW's own CAFD/FAFP XMLs)
    - your workspace DB
@@ -54,7 +54,7 @@ Move rows you're confident about from `my_names.tsv` into the right `names\<ECU>
    `.gitignore` blocks the usual file types and the check rejects psdzdata files and VINs, but please look at your diff.
 3. Only submit files you have the right to share, and keep their licence notice (many community cheat sheets are GPL-3.0).
 
-Don't edit `definitions.json`. After your pull request is merged, GitHub bumps the definitions version automatically, and everyone gets your names through the launcher's **Check for updates** / **Update now**.
+Don't edit `definitions.json`. After your pull request is merged, GitHub bumps the definitions version automatically, and everyone gets your names through OpenLauncher's **Check for updates** / **Update now**.
 
 `names\legacy_*.tsv` holds older, unverified names. They rank below everything else, so a verified name in a normal file replaces them automatically.
 

@@ -5,7 +5,7 @@ Prepare coding changes as **new** BimmerCode backups, then restore them from you
 This works with BimmerCode **iOS** backups (`.cod`, `<ECU>-<VIN>-<unix time>.cod`). Android's backup format isn't supported yet.
 
 ## Setup
-1. In the launcher, set **BimmerCode backups** to the folder where you copied BimmerCode's backups from the phone, then press **Save settings**.
+1. In OpenLauncher, set **BimmerCode backups** to the folder where you copied BimmerCode's backups from the phone, then press **Save settings**.
 2. Build the definitions, if you haven't yet.
 3. Open **BimmerCode Backup Editor**, then press **Import new backups from source folder**. This copies them into `workspace\bimmercode\`:
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Open CAFD Map launcher: set your paths, build the definitions, start E-Sys with labels, or open the
-BimmerCode Backup Editor. Start it with OpenCAFDMap.bat (or: pythonw launcher.py)."""
+"""OpenLauncher (Open CAFD Map): set your paths, build the definitions, start E-Sys with labels, or open
+the BimmerCode Backup Editor. Start it with OpenLauncher.bat (or: pythonw openlauncher.py)."""
 import glob
 import os
 import queue
@@ -16,6 +16,7 @@ import config  # noqa: E402
 import esys  # noqa: E402
 import pipeline  # noqa: E402
 import updater  # noqa: E402
+import appicon  # noqa: E402
 
 FIELDS = [  # key, label, kind, help
     ("esys_dir", "E-Sys folder", "dir", "contains E-Sys.bat, jre\\ and lib\\"),
@@ -26,7 +27,6 @@ FIELDS = [  # key, label, kind, help
     ("bimmercode_backups_dir", "BimmerCode backups", "dir", "optional: folder with your .cod backups"),
     ("cheat_sheets_dir", "Cheat sheets", "dir", "optional: FDL cheat-sheet XMLs (imported locally only)"),
     ("ista_db", "ISTA DiagDocDb", "file", "optional: decrypted DiagDocDb .sqlite (option-code titles)"),
-    ("update_repo", "Update source", "text", "GitHub owner/repo for definition updates (empty = project default)"),
 ]
 
 
@@ -36,10 +36,11 @@ def pythonw():
     return w if os.path.exists(w) else exe
 
 
-class Launcher(tk.Tk):
+class OpenLauncher(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Open CAFD Map")
+        self.title("OpenLauncher - Open CAFD Map")
+        appicon.apply(self)
         self.geometry("980x720")
         self.cfg = config.load()
         self.vars = {}
@@ -80,17 +81,16 @@ class Launcher(tk.Tk):
         af.pack(fill="x")
         b = ttk.LabelFrame(af, text="Definitions", padding=6)
         b.pack(side="left", fill="y")
-        self.btns = [
-            ttk.Button(b, text="Build definitions", width=26, command=lambda: self.run_step("build")),
-            ttk.Button(b, text="Apply names", width=26, command=lambda: self.run_step("names")),
-            ttk.Button(b, text="Check contributions", width=26, command=lambda: self.run_step("check")),
-        ]
-        for w, tip in zip(self.btns, ("first time, or after a psdzdata update", "after editing names\\*.tsv / my_names.tsv",
-                                     "names + definition XMLs, before you contribute")):
-            row = ttk.Frame(b)
+        self.btns = []
+        for text, step, tip in (("Build definitions", "build", "first time, or after a psdzdata update"),
+                                ("Apply names", "names", "after editing names\\*.tsv / my_names.tsv"),
+                                ("Check contributions", "check", "names + definition XMLs, before you contribute")):
+            row = ttk.Frame(b)  # the row is created first so it doesn't cover its button
             row.pack(fill="x", pady=1)
-            w.pack(in_=row, side="left")
+            w = ttk.Button(row, text=text, width=26, command=lambda s=step: self.run_step(s))
+            w.pack(side="left")
             ttk.Label(row, text=tip, foreground="#666").pack(side="left", padx=6)
+            self.btns.append(w)
         t = ttk.LabelFrame(af, text="Tools", padding=6)
         t.pack(side="left", fill="y", padx=8)
         self.btn_esys = ttk.Button(t, text="Start E-Sys with Open CAFD Map", width=32, command=self.start_esys)
@@ -101,6 +101,7 @@ class Launcher(tk.Tk):
         ttk.Button(o, text="Workspace", width=16, command=lambda: self.open_dir(config.paths().workspace)).pack(pady=1)
         ttk.Button(o, text="Names", width=16, command=lambda: self.open_dir(config.NAMES)).pack(pady=1)
         ttk.Button(o, text="Logs", width=16, command=lambda: self.open_dir(config.paths().logs)).pack(pady=1)
+        ttk.Button(o, text="Desktop shortcut", width=16, command=self.make_shortcut).pack(pady=1)
 
         u = ttk.LabelFrame(self, text="Definition updates", padding=6)
         u.pack(fill="x", padx=8, pady=(4, 0))
@@ -295,6 +296,21 @@ class Launcher(tk.Tk):
         subprocess.Popen([pythonw(), os.path.join(ROOT, "ocm", "bc_gui.py")], cwd=ROOT)
         self.write("BimmerCode Backup Editor started.")
 
+    def make_shortcut(self):
+        """OpenLauncher.lnk on the desktop, with the OpenLauncher icon (a .bat can't have one)."""
+        ps = ("$d=[Environment]::GetFolderPath('Desktop'); $s=(New-Object -ComObject WScript.Shell)"
+              ".CreateShortcut((Join-Path $d 'OpenLauncher.lnk')); $s.TargetPath=$env:OCM_T; "
+              "$s.Arguments='\"'+$env:OCM_A+'\"'; $s.WorkingDirectory=$env:OCM_W; $s.IconLocation=$env:OCM_I; "
+              "$s.Description='OpenLauncher - Open CAFD Map'; $s.Save(); Write-Output (Join-Path $d 'OpenLauncher.lnk')")
+        env = dict(os.environ, OCM_T=pythonw(), OCM_A=os.path.join(ROOT, "openlauncher.py"), OCM_W=ROOT,
+                   OCM_I=appicon.ICO)
+        r = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps], env=env,
+                           capture_output=True, text=True, creationflags=esys.NO_WINDOW)
+        if r.returncode == 0:
+            self.write(f"Shortcut created: {r.stdout.strip()}")
+        else:
+            messagebox.showerror("Desktop shortcut", r.stderr.strip() or "could not create the shortcut")
+
     def open_dir(self, path):
         os.makedirs(path, exist_ok=True)
         os.startfile(path)
@@ -314,4 +330,5 @@ def esys_running():
 
 
 if __name__ == "__main__":
-    Launcher().mainloop()
+    appicon.set_app_id()
+    OpenLauncher().mainloop()

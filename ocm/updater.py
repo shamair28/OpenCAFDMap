@@ -12,8 +12,9 @@ How it works
     file against the manifest, backs up any of your local edits, and swaps in the three folders.
     Nothing outside names\, definitions\ and data\ is touched (code updates: download a release or
     git pull). A git clone is updated with `git pull --ff-only` instead.
-  - Your workspace (DB, my_names.tsv, settings) is never touched; afterwards the launcher re-applies
+  - Your workspace (DB, my_names.tsv, settings) is never touched; afterwards OpenLauncher re-applies
     names so E-Sys picks up the new definitions.
+  - Updates only ever come from UPDATE_REPO below (github.com, HTTPS); it can't be changed in settings.
 """
 import argparse
 import datetime
@@ -32,8 +33,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config  # noqa: E402
 import defs_manifest as dm  # noqa: E402
 
-DEFAULT_REPO = "shamair28/OpenCAFDMap"   # forks: point this (or "Update source" in the launcher) at yours
-DEFAULT_BRANCH = "main"
+# The update source is fixed in code on purpose: it is not a setting, so nothing in config.json (or a
+# tampered settings file) can point OpenLauncher at someone else's repository. Forks change these lines.
+UPDATE_REPO = "shamair28/OpenCAFDMap"
+UPDATE_BRANCH = "main"
 MAX_ZIP = 300 * 1024 * 1024
 UA = {"User-Agent": "OpenCAFDMap-updater"}
 
@@ -42,13 +45,9 @@ class UpdateError(Exception):
     pass
 
 
-def source(cfg):
-    repo = (cfg.get("update_repo") or DEFAULT_REPO).strip().strip("/")
-    if repo.startswith("https://github.com/"):
-        repo = repo[len("https://github.com/"):].removesuffix(".git")
-    if repo.count("/") != 1:
-        raise UpdateError("No update source set (GitHub owner/repo). Set it in the launcher settings.")
-    return repo, (cfg.get("update_branch") or DEFAULT_BRANCH).strip()
+def source(cfg=None):
+    """Where updates come from (cfg is ignored: the source is not configurable)."""
+    return UPDATE_REPO, UPDATE_BRANCH
 
 
 def vtuple(v):

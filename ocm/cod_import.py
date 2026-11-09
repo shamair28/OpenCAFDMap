@@ -128,7 +128,7 @@ def apply_sheet(sheet=SHEET, names=NAMES):
     if new:
         with open(names, "a", encoding="utf-8", newline="\n") as f:
             f.write("# --- imported from bimmercode_changes.tsv ---\n" + "\n".join(new) + "\n")
-    print(f"{len(new)} new lines appended to {names}; now press 'Apply names' in the launcher")
+    print(f"{len(new)} new lines appended to {names}; now press 'Apply names' in OpenLauncher")
 
 
 def main():
@@ -146,7 +146,7 @@ def main():
         return
     a.folder = a.folder or _P.cfg.get("bimmercode_backups_dir")
     if not a.folder:
-        ap.error("backup folder required (or set bimmercode_backups_dir in the launcher)")
+        ap.error("backup folder required (or set bimmercode_backups_dir in OpenLauncher)")
     con = sqlite3.connect(f"file:{a.db}?mode=ro", uri=True)
     cods = [read_cod(p) for p in sorted(glob.glob(os.path.join(a.folder, "*.cod")))]
     if a.ncd:

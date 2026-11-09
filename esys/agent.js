@@ -9,7 +9,7 @@
   var SwingUtilities = javax.swing.SwingUtilities;
   var System = java.lang.System;
 
-  // Open CAFD Map labelling agent. Runs only inside an E-Sys started by the Open CAFD Map launcher
+  // Open CAFD Map labelling agent. Runs only inside an E-Sys started by OpenLauncher
   // (esys/bootstrap.js). It renames E-Sys's in-memory CAFD / FP tree nodes ("." -> BMW / community
   // names and derived value labels) from the definition XMLs. It never changes coding data.
   if (String(System.getProperty("ocm.launcher")) !== "1") return;

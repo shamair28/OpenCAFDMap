@@ -32,7 +32,7 @@ The format the agent reads, used by `export_defs.py` and older hand-made definit
 FDL cheat-sheet XMLs (`<FDL><cafd id><code description><group id><function start end mask comment>VALUE`). They're imported like local cheat sheets: each entry is checked against your DB, and BMW names in comments (`INBAND_RINGING (value: aktiv)`) become names.
 
 ## Rules
-- **Check first:** launcher → **Check contributions** (or `python ocm\check_names.py`). The same check runs on every pull request.
+- **Check first:** OpenLauncher → **Check contributions** (or `python ocm\check_names.py`). The same check runs on every pull request.
 - **Not accepted:**
   - decrypted psdzdata files themselves (BMW's own CAFD/FAFP XMLs, `xmlns=".../psdz.data..."`)
   - NCDs, BimmerCode backups, FA/FP/SVT files

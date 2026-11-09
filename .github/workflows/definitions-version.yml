@@ -1,5 +1,5 @@
 # After every merge to main that changes shared definitions, bump definitions.json (version + file
-# hashes). The launcher's "Check for updates" compares against this file.
+# hashes). OpenLauncher's "Check for updates" compares against this file.
 name: definitions version
 on:
   workflow_dispatch:

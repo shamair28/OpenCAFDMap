@@ -1,13 +1,13 @@
-// Open CAFD Map: entry point for E-Sys started by the Open CAFD Map launcher (ocm\esys.py launch).
+// Open CAFD Map: entry point for E-Sys started by OpenLauncher (ocm\esys.py launch).
 //
-// The launcher runs E-Sys's own JRE + classpath with Java's JavaScript runner (jdk.nashorn.tools.Shell)
+// OpenLauncher runs E-Sys's own JRE + classpath with Java's JavaScript runner (jdk.nashorn.tools.Shell)
 // as the main class. This script loads the labelling agent, then starts E-Sys exactly as E-Sys.bat
 // does (com.bmw.esys.gui.control.Framework). Nothing is installed into E-Sys; an E-Sys started any
 // other way never runs this code.
 (function () {
   var System = java.lang.System;
   if (String(System.getProperty("ocm.launcher")) !== "1") {
-    System.err.println("Open CAFD Map: bootstrap.js must be started by the Open CAFD Map launcher.");
+    System.err.println("Open CAFD Map: bootstrap.js must be started by OpenLauncher.");
     System.exit(2);
   }
 

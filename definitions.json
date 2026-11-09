@@ -1,6 +1,6 @@
 {
- "version": "2026.11.09.1",
- "date": "2026-11-09T22:13:52Z",
+ "version": "2026.11.09.2",
+ "date": "2026-11-09T23:58:07Z",
  "files": {
   "data/contexts/G20_LCI_ECE_320i_11FF.xml": "f621bfff2f28901354255ca0aa8813ae2d19cf7c1374d978c8b16aa5b2cfe5ee",
   "data/contexts/G20_LCI_US_330ixDrive_89FF.xml": "3bd5e3d83ecbd0503f18f3c57680cf1643e38f1bf9341c0bed12877df973592a",
@@ -12,7 +12,7 @@
   "data/fp_crits_curated.tsv": "553af8bff8ca5241357dd6098de5c19a3cfe1e6709699a4eeb656ff0ec1ca35a",
   "data/fp_crits_typekey.tsv": "7059dd02d49565726cbbdeaf2a293379ea1b86993a4e6983c3d6e46b8db42e24",
   "data/fp_crits_verified.tsv": "cd75577aa1ddfb88a74123ae011e457dedd7d35a5edb2152932e97e9bc356f87",
-  "definitions/README.md": "1ce00f87aa017a828aeda184be77247759d865b5541d7a27da9fd949e43cb5a9",
+  "definitions/README.md": "4c4b5e60eef3a235a3c289579817f76f32ec6a9ddfffa3e61784a08807d5919c",
   "names/BDC_BODY3.tsv": "eb5e34de145aea9570b9a0896e8f0a0f6a32318b367a8840dc8a6ea75ff76350",
   "names/DKOMBI4.tsv": "81c58ce0da73954795fff0fd338c442832f470a16909d1a610f70bf0d07860e3",
   "names/DME_BAC2.tsv": "5fd737cd209d53f2f1a4b4de642c663b8ca71d8c8f847bc259b3b83f79dcee9f",

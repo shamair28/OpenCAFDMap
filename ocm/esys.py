@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 r"""Run E-Sys: headless helper scripts, or E-Sys itself with Open CAFD Map's labels.
 
-    python ocm\esys.py launch          start E-Sys with Open CAFD Map (same as the launcher button)
+    python ocm\esys.py launch          start E-Sys with Open CAFD Map (same as the OpenLauncher button)
     python ocm\esys.py run <script.js> [args...]   headless Nashorn script on E-Sys's classpath
 
 How the labelling gets into E-Sys
-  Only through this launcher. E-Sys is started in a NEW process with E-Sys's own JRE, classpath and
+  Only through OpenLauncher. E-Sys is started in a NEW process with E-Sys's own JRE, classpath and
   VM options (as in E-Sys.bat), but with Java's built-in JavaScript runner as the entry point:
   esys\bootstrap.js loads esys\agent.js and then calls E-Sys's normal main class.
   - nothing is written into the E-Sys folder (no patched .bat, jar, config or -javaagent hook);
   - E-Sys started any other way (E-Sys.exe, E-Sys.bat, another launcher) never sees our code;
-  - bootstrap.js and agent.js refuse to run unless the launcher's -Docm.launcher flag is present.
+  - bootstrap.js and agent.js refuse to run unless OpenLauncher's -Docm.launcher flag is present.
 """
 import os
 import subprocess
@@ -31,7 +31,7 @@ def check_esys(cfg):
     missing = [p for p in need if not os.path.exists(p)]
     if not d or missing:
         raise SystemExit(f"E-Sys not found in '{d}' (missing {', '.join(missing) or 'folder'}). "
-                         "Set the E-Sys folder in the launcher.")
+                         "Set the E-Sys folder in OpenLauncher.")
     return d
 
 

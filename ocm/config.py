@@ -1,4 +1,4 @@
-"""Open CAFD Map settings: one config.json next to the launcher (not committed; see config.example.json).
+"""Open CAFD Map settings: one config.json next to OpenLauncher (not committed; see config.example.json).
 
 Every tool reads its paths from here, so nothing is tied to one machine's drive layout.
 """
@@ -23,8 +23,6 @@ DEFAULTS = {
     "cheat_sheets_dir": "",      # optional: folder of FDL cheat-sheet XMLs to import (kept local, never committed)
     "ista_db": "",               # optional: decrypted ISTA DiagDocDb sqlite (SA option titles in labels)
     "bimmercode_backups_dir": "",  # optional: folder with BimmerCode .cod backups for the backup editor
-    "update_repo": "",           # GitHub owner/repo the definitions updater pulls from ("" = project default)
-    "update_branch": "main",
 }
 
 

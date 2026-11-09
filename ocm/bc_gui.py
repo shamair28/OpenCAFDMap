@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 r"""BimmerCode Backup Editor: browse BimmerCode backups, stage parameter changes, write new backups.
 
-    pythonw ocm\bc_gui.py        (or the "BimmerCode Backup Editor" button in the launcher)
+    pythonw ocm\bc_gui.py        (or the "BimmerCode Backup Editor" button in OpenLauncher)
 
 Same engine as bc_tool.py: originals are never written; every new backup is a byte copy of the
 selected backup with only the staged coding bytes changed, verified after writing.
@@ -15,6 +15,7 @@ from tkinter import messagebox, ttk
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import appicon  # noqa: E402
 import bc_tool as bt  # noqa: E402
 
 
@@ -56,10 +57,11 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("BimmerCode Backup Editor - Open CAFD Map")
+        appicon.apply(self)
         self.geometry("1500x850")
         bt.ensure_workspace()
         if not os.path.exists(bt.DB):
-            messagebox.showerror("No definition DB", f"{bt.DB} not found.\nBuild the definitions in the launcher first.")
+            messagebox.showerror("No definition DB", f"{bt.DB} not found.\nBuild the definitions in OpenLauncher first.")
             self.destroy()
             raise SystemExit(1)
         self.con = bt.db()
@@ -389,4 +391,5 @@ class App(tk.Tk):
 
 
 if __name__ == "__main__":
+    appicon.set_app_id("OpenCAFDMap.BackupEditor")
     App().mainloop()

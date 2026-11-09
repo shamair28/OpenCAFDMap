@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 r"""Definitions manifest (definitions.json at the repo root): the version of the shared definitions
-(names\, definitions\, data\) plus a SHA-256 of every file. The launcher's updater compares it with
+(names\, definitions\, data\) plus a SHA-256 of every file. OpenLauncher's updater compares it with
 the latest one on GitHub and verifies every downloaded file against it.
 
     python ocm\defs_manifest.py            show the installed definitions version

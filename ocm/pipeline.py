@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-r"""Open CAFD Map build steps (the launcher's buttons, also usable from a terminal).
+r"""Open CAFD Map build steps (OpenLauncher's buttons, also usable from a terminal).
 
     python ocm\pipeline.py build      decrypt your psdzdata, build the DB, apply names, export definitions
     python ocm\pipeline.py names      re-apply names (after editing names\*.tsv or my_names.tsv) + export
     python ocm\pipeline.py check      check the names files
 
-Paths come from config.json (edit them in the launcher).
+Paths come from config.json (edit them in OpenLauncher).
 """
 import os
 import subprocess
