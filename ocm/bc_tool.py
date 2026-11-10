@@ -267,18 +267,40 @@ def find_func(fs, spec):
     return hit[0]
 
 
+def pasted_hex(s):
+    """Hex from a pasted value, or None if it isn't hex.
+    "01000F" / "0x01000F": the digits as given.
+    "01, 00, 0F" / "0x01 0x0 F" / "0, 00, 0F" (comma, space, ; or line separated): one byte per item,
+    so a single-digit item is that byte ("0" -> "00", "F" -> "0F"). Items longer than 2 digits are
+    refused, so nothing can shift."""
+    s = s.strip()
+    if not s:
+        return None
+    if re.search(r"[\s,;]", s):
+        items = [re.sub(r"^0[xX]", "", t) for t in re.split(r"[\s,;]+", s) if t]
+        if not items or not all(re.fullmatch(r"[0-9A-Fa-f]{1,2}", t) for t in items):
+            return None
+        return "".join(t.zfill(2) for t in items)
+    s = re.sub(r"^0[xX]", "", s)
+    return s if re.fullmatch(r"[0-9A-Fa-f]+", s) else None
+
+
 def resolve_value(con, f, spec):
     vals = values(con, f["pk"])
-    s = spec.strip()
+    s = re.sub(r"^\s*(werte|values?)\s*[=:]\s*", "", spec.strip(), flags=re.I)  # E-Sys "Werte=01, 65, ..."
     nbytes = f["end"] - f["start"] + 1
-    # pasted arrays: "01, 00, 0F", "0x01 0x00", "01000F", line breaks ... -> plain hex
-    h = re.sub(r"0[xX]", "", s) if re.search(r"[\s,;]|0[xX]", s) else s
-    h = re.sub(r"[\s,;]+", "", h)
-    if re.fullmatch(r"[0-9A-Fa-f]+", h):
+    h = pasted_hex(s)
+    if h is not None:
         if nbytes > 1:
             # multi-byte: exact length only - never pad, so bytes can't shift
             if len(h) != 2 * nbytes:
-                sys.exit(f"{f['name']} is {nbytes} bytes; the pasted value has {len(h) / 2:g} bytes. Nothing written.")
+                hint = ""
+                extra = h[2 * nbytes:]
+                if len(h) > 2 * nbytes and len(extra) % 2 == 0 and set(extra) <= {"0"}:
+                    hint = (f" The {len(extra) // 2} extra byte(s) at the end are all 00 (a template for a longer "
+                            "layout?) - remove them if the rest is right.")
+                sys.exit(f"{f['name']} is {nbytes} bytes; the pasted value has {len(h) / 2:g} bytes. "
+                         f"Nothing staged.{hint}")
             hx = h.upper()
         elif len(h) <= 2:
             hx = h.upper().zfill(2)

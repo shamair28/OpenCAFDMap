@@ -143,22 +143,30 @@ class App(tk.Tk):
         self.tv.column("label", width=420, minwidth=60, stretch=False)
         fr.pack(fill="x")
         self.tv.bind("<Double-1>", lambda _e: self.stage_selected_value())
-        row = ttk.Frame(rf)
-        row.pack(fill="x", pady=3)
-        ttk.Button(row, text="Stage selected value", command=self.stage_selected_value).pack(side="left")
-        ttk.Label(row, text="  custom hex").pack(side="left")
+        ttk.Button(rf, text="Stage selected value", command=self.stage_selected_value).pack(anchor="w", pady=(3, 0))
+        cf = ttk.LabelFrame(rf, text="Custom value (hex, e.g. 01000B5A... or 01, 00, 0B, 5A, ...)", padding=4)
+        cf.pack(fill="x", pady=(6, 0))
         self.custom = tk.StringVar()
-        ttk.Entry(row, textvariable=self.custom, width=14).pack(side="left", padx=3)
+        ce = ttk.Entry(cf, textvariable=self.custom)
+        ce.pack(fill="x")
+        ce.bind("<Return>", lambda _e: self.stage_custom())
+        crow = ttk.Frame(cf)
+        crow.pack(fill="x", pady=(3, 0))
         self.allow_custom = tk.BooleanVar()
-        ttk.Checkbutton(row, text="allow custom", variable=self.allow_custom).pack(side="left")
-        ttk.Button(row, text="Stage custom", command=self.stage_custom).pack(side="left", padx=3)
+        ttk.Checkbutton(crow, text="allow values outside the CAFD's list", variable=self.allow_custom).pack(side="left")
+        ttk.Button(crow, text="Stage custom", command=self.stage_custom).pack(side="right")
+        # result of the last staging attempt (staged / refused / no change), always visible
+        self.stage_msg = tk.StringVar()
+        self.stage_lbl = ttk.Label(rf, textvariable=self.stage_msg, wraplength=560, justify="left")
+        self.stage_lbl.pack(anchor="w", fill="x", pady=(4, 0))
 
         ttk.Label(rf, text="Staged changes (for the loaded backup)").pack(anchor="w", pady=(8, 0))
-        self.ts = ttk.Treeview(rf, columns=("param", "old", "new"), show="headings", height=8, selectmode="browse")
-        for c, w in (("param", 230), ("old", 90), ("new", 90)):
+        fr, self.ts = scrolled(rf, lambda p: ttk.Treeview(p, columns=("param", "old", "new"), show="headings",
+                                                          height=8, selectmode="browse"))
+        for c, w in (("param", 260), ("old", 170), ("new", 170)):
             self.ts.heading(c, text=c)
-            self.ts.column(c, width=w)
-        self.ts.pack(fill="x")
+            self.ts.column(c, width=w, minwidth=60, stretch=False)
+        fr.pack(fill="x")
         row2 = ttk.Frame(rf)
         row2.pack(fill="x", pady=3)
         ttk.Button(row2, text="Remove", command=self.unstage_selected).pack(side="left")
@@ -167,10 +175,27 @@ class App(tk.Tk):
         self.note = tk.StringVar()
         ttk.Entry(rf, textvariable=self.note).pack(fill="x")
         ttk.Button(rf, text="Write new backup", command=self.write_backup).pack(fill="x", pady=6)
-        ttk.Label(rf, foreground="#a33", wraplength=440, justify="left",
+        ttk.Label(rf, foreground="#a33", wraplength=560, justify="left",
                   text="New backups keep the source backup's signature block. Restore one low-risk change "
                        "first (see docs/BC_EDITOR.md). Originals are never modified.").pack(anchor="w")
         pan.add(rf, weight=2)
+        self.pan = pan
+        self.after(150, self._place_sashes)
+
+    def _place_sashes(self):
+        """Start with a roomy details/staging pane (~600 px) instead of an equal-weight split."""
+        try:
+            w = self.pan.winfo_width()
+            if w > 1100:
+                self.pan.sashpos(0, min(480, int(w * 0.27)))
+                self.pan.sashpos(1, w - 620)
+        except tk.TclError:
+            pass
+
+    def say(self, text, kind="info"):
+        """Show the result of a staging action in the status line (red = refused, green = staged)."""
+        self.stage_msg.set(text)
+        self.stage_lbl.configure(foreground={"error": "#b00020", "ok": "#1b7a2f"}.get(kind, "#444"))
 
     # ---------------------------------------------------------------- backups
     def refresh_backups(self):
@@ -189,7 +214,7 @@ class App(tk.Tk):
     def import_new(self):
         ok, txt, _ = run_captured(bt.cmd_init, type("A", (), {"folder": None})())
         self.refresh_backups()
-        messagebox.showinfo("Import", txt or "done")
+        messagebox.showinfo("Import", txt or "done", parent=self)
 
     def on_backup_select(self, _e=None):
         sel = self.tb.selection()
@@ -199,7 +224,8 @@ class App(tk.Tk):
         if self.cod and path == self.cod.path:
             return
         if self.staged and not messagebox.askyesno("Discard staged changes?",
-                                                   f"{len(self.staged)} staged change(s) belong to the loaded backup. Discard them?"):
+                                                   f"{len(self.staged)} staged change(s) belong to the loaded backup. Discard them?",
+                                                   parent=self):
             return
         self.load(path)
 
@@ -207,7 +233,7 @@ class App(tk.Tk):
         self.cod = bt.Cod(path)
         ok, txt, fs = run_captured(bt.functions, self.con, self.cod)
         if not ok:
-            messagebox.showerror("Not in definition DB", txt)
+            messagebox.showerror("Not in definition DB", txt, parent=self)
             self.cod, self.funcs = None, []
             return
         self.funcs = fs
@@ -274,20 +300,31 @@ class App(tk.Tk):
             self.tv.insert("", "end", iid=f"{idx}", values=(mark + short_hex(vhex), lab))
 
     # ---------------------------------------------------------------- staging
+    def refuse(self, title, text):
+        self.say(f"Not staged: {text}", "error")
+        messagebox.showerror(title, text, parent=self)
+
     def _stage(self, f, hx):
         if f["dg_class"] == "SYSTEM":
-            messagebox.showerror("Not editable", "SYSTEM (signature) datagroups can't be edited.")
+            self.refuse("Not editable", "SYSTEM (signature) datagroups can't be edited.")
             return
         try:  # dry-run the write into a scratch copy of the block to validate width / mask
             buf = bytearray(self.cod.blocks[f["addr"]])
             bt.insert(buf, f, hx)
         except Exception as e:  # noqa: BLE001
-            messagebox.showerror("Invalid value", str(e))
+            self.refuse("Invalid value", str(e))
             return
-        if hx == self.cur.get(f["pk"]):
-            self.staged.pop(f["pk"], None)
+        cur = self.cur.get(f["pk"])
+        nbytes = len(hx) // 2
+        if hx == cur:
+            was = self.staged.pop(f["pk"], None)
+            self.say(f"{f['name']}: that is the backup's current value - nothing to stage"
+                     + (" (the earlier staged change was removed)." if was else "."))
         else:
             self.staged[f["pk"]] = hx
+            diff = sum(1 for i in range(0, len(hx), 2) if cur and hx[i:i + 2] != cur[i:i + 2])
+            self.say(f"Staged {f['name']} = {short_hex(hx, 32)}"
+                     + (f"  ({diff} of {nbytes} bytes differ)" if nbytes > 1 and cur else ""), "ok")
         self.fill_staged()
         self.refresh_param_row(f)
 
@@ -303,16 +340,20 @@ class App(tk.Tk):
     def stage_custom(self):
         f = self.selected_func()
         if not f:
+            self.say("Select a parameter first.", "error")
             return
         h = self.custom.get().strip()
-        h = h[2:] if h.lower().startswith("0x") else h
+        if not h:
+            self.say("Type or paste a value into the custom value box first.", "error")
+            return
         ok, txt, res = run_captured(bt.resolve_value, self.con, f, h)
         if not ok:
-            messagebox.showerror("Value", txt)
+            self.refuse("Value", txt)
             return
         hx, known = res
         if not known and not self.allow_custom.get():
-            messagebox.showerror("Value", f"{hx} is not one of {f['name']}'s values. Tick 'allow custom' to stage it anyway.")
+            self.refuse("Value", f"{short_hex(hx, 32)} is not one of {f['name']}'s values. Tick "
+                                 "'allow values outside the CAFD's list' to stage it anyway.")
             return
         self._stage(f, hx)
 
@@ -327,7 +368,7 @@ class App(tk.Tk):
         self.ts.delete(*self.ts.get_children())
         for pk, hx in self.staged.items():
             f = next(x for x in self.funcs if x["pk"] == pk)
-            self.ts.insert("", "end", iid=str(pk), values=(f"{f['addr']}/{f['name']}", (self.cur.get(pk) or "?")[:16], hx[:16]))
+            self.ts.insert("", "end", iid=str(pk), values=(f"{f['addr']}/{f['name']}", short_hex(self.cur.get(pk) or "?", 40), short_hex(hx, 40)))
 
     def unstage_selected(self):
         for iid in self.ts.selection():
@@ -347,18 +388,20 @@ class App(tk.Tk):
     # ---------------------------------------------------------------- actions
     def write_backup(self):
         if not self.cod or not self.staged:
-            messagebox.showinfo("Nothing to write", "Load a backup and stage at least one change.")
+            messagebox.showinfo("Nothing to write", "Load a backup and stage at least one change.", parent=self)
             return
-        lines = "\n".join(f"{next(x for x in self.funcs if x['pk'] == pk)['name']}: {self.cur.get(pk)} -> {hx}"
+        lines = "\n".join(f"{next(x for x in self.funcs if x['pk'] == pk)['name']}: "
+                          f"{short_hex(self.cur.get(pk) or '?', 48)} -> {short_hex(hx, 48)}"
                           for pk, hx in self.staged.items())
         if not messagebox.askyesno("Write new backup?",
                                    f"Source: {os.path.basename(self.cod.path)}\n\n{lines}\n\n"
-                                   "A NEW .cod is written to out\\ (the source is not changed). Continue?"):
+                                   "A NEW .cod is written to out\\ (the source is not changed). Continue?",
+                                   parent=self):
             return
         changes = [(next(x for x in self.funcs if x["pk"] == pk), hx) for pk, hx in self.staged.items()]
         ok, txt, out = run_captured(bt.write_new, self.con, self.cod, changes, self.note.get())
         if not ok:
-            messagebox.showerror("Write failed", txt)
+            messagebox.showerror("Write failed", txt, parent=self)
             return
         self.staged.clear()
         self.refresh_backups()
@@ -367,12 +410,12 @@ class App(tk.Tk):
                 self.tb.selection_set(iid)
                 self.tb.see(iid)
                 self.load(out)
-        messagebox.showinfo("New backup written", txt)
+        messagebox.showinfo("New backup written", txt, parent=self)
 
     def diff_selected(self):
         sel = self.tb.selection()
         if len(sel) != 2:
-            messagebox.showinfo("Diff", "Ctrl-click exactly two backups (same ECU / CAFD version).")
+            messagebox.showinfo("Diff", "Ctrl-click exactly two backups (same ECU / CAFD version).", parent=self)
             return
         a = type("A", (), {"a": self.cods[sel[0]], "b": self.cods[sel[1]]})()
         ok, txt, _ = run_captured(bt.cmd_diff, a)
@@ -380,7 +423,7 @@ class App(tk.Tk):
 
     def check_originals(self):
         ok, txt, _ = run_captured(bt.cmd_check, None)
-        messagebox.showinfo("Check originals", txt)
+        messagebox.showinfo("Check originals", txt, parent=self)
 
     def show_text(self, title, txt):
         w = tk.Toplevel(self)
