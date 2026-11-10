@@ -1,7 +1,8 @@
 # Edit file for: python ocm\bc_tool.py apply <backup> edits\<file>.tsv
 # One edit per line:  parameter = value      (# starts a comment)
 # parameter: name as shown by `bc_tool.py show` / the Backup Editor (optionally group/name),
-#            or a raw position addr:start:end:mask, e.g. 3221:13:13:11111111b
+#            or a raw position addr:start:end:mask, e.g. 3221:12:12:11111111b
 # value:     hex (05, 0x05), a value label as shown (aktiv, mode Comfort+), or wert_NN
-# Example (BDC_BODY3 backup, CAFD 00007083) - remove the # to use it:
-# FesComfortWorldMode2 = mode Comfort+
+# Example (BDC_BODY3 backup, CAFD 00007083: PfFesMaster byte 12, the Comfort+ drive-mode slot)
+# - remove the # to use it:
+# 3221:12:12:11111111b = mode Comfort+

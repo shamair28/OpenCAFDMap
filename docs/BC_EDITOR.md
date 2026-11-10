@@ -50,8 +50,8 @@ New files are named like BimmerCode's (`<ECU>-<VIN>-<current unix time>.cod`), s
 ```
 python ocm\bc_tool.py list
 python ocm\bc_tool.py show latest:BDC_BODY3 --group 3221
-python ocm\bc_tool.py values latest:BDC_BODY3 FesComfortWorldMode2
-python ocm\bc_tool.py set latest:BDC_BODY3 "FesComfortWorldMode2=mode Comfort+" --note "test"
+python ocm\bc_tool.py values latest:BDC_BODY3 3221:12:12:11111111b
+python ocm\bc_tool.py set latest:BDC_BODY3 "3221:12:12:11111111b=mode Comfort+" --note "test"
 python ocm\bc_tool.py apply latest:HU_MGU workspace\bimmercode\edits\my_changes.tsv
 python ocm\bc_tool.py diff <backup A> <backup B>
 ```
