@@ -30,6 +30,14 @@ FIELDS = [  # key, label, kind, help
 ]
 
 
+def app_version():
+    """'v1.0.0' for a release install (VERSION is added by installer/build_release.py), '' otherwise."""
+    try:
+        return "v" + open(os.path.join(ROOT, "VERSION"), encoding="utf-8").read().strip()
+    except OSError:
+        return ""
+
+
 def pythonw():
     exe = sys.executable
     w = os.path.join(os.path.dirname(exe), "pythonw.exe")
@@ -39,7 +47,7 @@ def pythonw():
 class OpenLauncher(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("OpenLauncher - Open CAFD Map")
+        self.title(f"OpenLauncher {app_version()} - Open CAFD Map".replace("  ", " "))
         appicon.apply(self)
         self.geometry("980x720")
         self.cfg = config.load()

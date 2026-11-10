@@ -60,3 +60,13 @@ Don't edit `definitions.json`. After your pull request is merged, GitHub bumps t
 
 ## Code
 Bug fixes and improvements to the tools are welcome too. Keep the launcher-only rule: nothing may be installed into, patched into or written to the E-Sys folder.
+
+## Releases (maintainers)
+Tag a version and push the tag:
+
+```
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+`.github/workflows/release.yml` checks the names and the manifest, builds `OpenCAFDMap.zip` (+ `.sha256`) with `installer/build_release.py`, and publishes a GitHub Release with `OpenLauncher-Setup.bat`. Setup always installs the *latest* release. Name-only changes don't need a release: OpenLauncher's **Check for updates** picks them up from `main`.

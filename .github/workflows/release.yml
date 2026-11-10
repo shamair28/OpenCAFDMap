@@ -1,0 +1,39 @@
+# Push a version tag (e.g. git tag v1.0.0 && git push origin v1.0.0) to publish a GitHub Release with
+# OpenCAFDMap.zip, its SHA-256 and OpenLauncher-Setup.bat (which installs the latest release).
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python ocm/check_names.py
+      - run: python ocm/defs_manifest.py --check
+      - run: python installer/build_release.py "${{ github.ref_name }}"
+      - name: publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cat > notes.md <<EOF
+          ## Install
+          1. Download **OpenLauncher-Setup.bat** below and double-click it.
+             Windows may warn about a downloaded file: choose *More info* / *Run anyway* if you trust it.
+          2. Pick the install folder (default: %LOCALAPPDATA%\\OpenCAFDMap). Setup checks for Python 3.10+
+             (it can install it with winget), downloads **OpenCAFDMap.zip**, verifies its SHA-256 and
+             creates Desktop / Start menu shortcuts.
+          3. In OpenLauncher: set your E-Sys folder, press **Build definitions**, then **Start E-Sys with Open CAFD Map**.
+
+          **Upgrading:** run setup again; your workspace and settings are kept.
+          **Manual install:** extract OpenCAFDMap.zip anywhere and run OpenLauncher.bat.
+          Definition updates (names) arrive through OpenLauncher's **Check for updates** without reinstalling.
+          EOF
+          gh release create "$TAG" dist/OpenCAFDMap.zip dist/OpenCAFDMap.zip.sha256 installer/OpenLauncher-Setup.bat \
+            --title "OpenLauncher $TAG" --notes-file notes.md --generate-notes
