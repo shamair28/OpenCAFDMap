@@ -89,7 +89,10 @@ try {
         Say "Downloading the latest release from github.com/$Repo ..."
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         Invoke-WebRequest "$base/OpenCAFDMap.zip" -OutFile $zip -UseBasicParsing
-        $want = ((Invoke-WebRequest "$base/OpenCAFDMap.zip.sha256" -UseBasicParsing).Content -split '\s+')[0].Trim().ToLower()
+        # saved to a file: GitHub serves it as application/octet-stream, which Windows PowerShell 5.1
+        # would otherwise hand back as raw bytes instead of text
+        Invoke-WebRequest "$base/OpenCAFDMap.zip.sha256" -OutFile "$zip.sha256" -UseBasicParsing
+        $want = ((Get-Content "$zip.sha256" -Raw).Trim() -split '\s+')[0].ToLower()
         $got = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
         if ($want -ne $got) { Fail "Checksum mismatch - the download is damaged. Nothing was installed." }
         Say "Checksum OK"
