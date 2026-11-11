@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 r"""Export agent definition XMLs (CAFD_<id>_<main>_<sub>_<patch>.xml) from cafd_defs.sqlite.
 
-    python ocm\export_defs.py                 # newest 3 versions per CAFD + versions in your BimmerCode backups
+    python ocm\export_defs.py                 # newest 3 versions per CAFD + versions in E-Sys's SVT/CAF/NCD
+                                              # folders and in your BimmerCode backups
     python ocm\export_defs.py --all           # every CAFD version of the series (~2400 files for G020)
     python ocm\export_defs.py --ids 000043AF,00006DF0 --latest 0   # all versions of selected ids
     python ocm\export_defs.py --fp FP.xml     # mark the value the vehicle's FA would code with *
@@ -52,6 +53,24 @@ def svt_versions(paths):
                                           r"<mainVersion>(\d+)</mainVersion>\s*<subVersion>(\d+)</subVersion>\s*"
                                           r"<patchVersion>(\d+)</patchVersion>", s):
             out.add((cid.upper(), f"{int(mv):03d}_{int(sv):03d}_{int(pv):03d}"))
+    return out
+
+
+NCD_NAME = re.compile(r"^CAFD_([0-9A-Fa-f]{8})_(\d{3})_(\d{3})_(\d{3})\.ncd$")
+
+
+def esys_data_versions(cfg):
+    """CAFD versions you work with in E-Sys: every SVT in its SVT folder and every CAFD_*.ncd under its CAF and
+    NCD folders (E-Sys's own Path.Home / Path.NcdRootDir settings, read-only)."""
+    props = config.esys_properties(cfg) if cfg.get("esys_dir") else {}
+    home, ncd_root = props.get("Path.Home", ""), props.get("Path.NcdRootDir", "")
+    svts = glob.glob(os.path.join(home, "SVT", "**", "*.xml"), recursive=True) if home else []
+    out = svt_versions(svts)
+    for d in {os.path.join(home, "CAF") if home else "", ncd_root}:
+        for p in glob.glob(os.path.join(d, "**", "CAFD_*.ncd"), recursive=True) if d and os.path.isdir(d) else []:
+            m = NCD_NAME.match(os.path.basename(p))
+            if m:
+                out.add((m.group(1).upper(), "_".join(m.group(2, 3, 4))))
     return out
 
 
@@ -158,6 +177,8 @@ def main():
     for r in rows:
         by.setdefault(r[1], []).append(r)
     want = set(svt_versions(a.svt))
+    # versions you open in E-Sys: SVTs and NCDs in E-Sys's data folders (e.g. a FakeCar's SVT)
+    want |= esys_data_versions(P.cfg)
     # versions your car actually runs: every CAFD listed in your BimmerCode backups
     want |= backup_versions([P.cfg.get("bimmercode_backups_dir"), os.path.join(P.bc, "originals"),
                              os.path.join(P.bc, "out")])

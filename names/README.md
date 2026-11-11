@@ -6,6 +6,8 @@ Community names for trimmed CAFD groups, functions and values. There's one file 
 - Priority when two sources disagree:
   1. your private `workspace\my_names.tsv`
   2. these files
-  3. cheat sheets you imported locally
-  4. `legacy_*.tsv` (older, unverified names)
-- Licence: CC0 ([LICENSE](LICENSE)). Anyone may reuse these names for anything.
+  3. contributed definition XMLs (`definitions\`)
+  4. `cheatsheet\*.tsv`: names taken from a cheat sheet that can't be shipped ([cheatsheet/README.md](cheatsheet/README.md))
+  5. cheat sheets: the community ones in `definitions\community-cheatsheets\` and any you set up locally
+  6. `legacy_*.tsv` (older, unverified names)
+- Licence: CC0 ([LICENSE](LICENSE)) for the files directly in this folder. Anyone may reuse these names for anything. `cheatsheet\` has its own note.

@@ -7,11 +7,12 @@ r"""Build the CAFD definition database from decrypted psdzdata CAFDs.
 Inputs (defaults come from config.json via ocm\config.py)
   --cache     cafd_<ID>_<main>_<sub>_<patch>.xml.gz from decrypt_cafds.js
   --fafp      decrypted FA->FP mapping for the series (crit -> SA / HO / E-word / date)
-  --ista      decrypted ISTA DiagDocDb (SA option-code titles)
+  --ista      decrypted ISTA DiagDocDb (SA option-code titles; without it data\sa_titles.tsv)
   --verified  fp_crits_verified.tsv  (crits confirmed via E-Sys FP generation)
   --typekey   fp_crits_typekey.tsv   (crits derived from all type keys, label_typekey_crits.py)
   --fpdef     curated FP_<series>.xml (fallback labels; shown with a trailing '?')
   names\*.tsv           community names (version independent; legacy_*.tsv rank lowest)
+  names\cheatsheet\*.tsv names taken from cheat sheets that can't be shipped (below contributed definitions)
   workspace\my_names.tsv your private names (highest priority)
 
 Why derived labels: current psdzdata strips every FDL name ("." in E-Sys) and ISTA does not
@@ -120,6 +121,11 @@ def load_crits(a):
                 if name and name not in sa_titles:
                     sa_titles[name] = en or de
             con.close()
+        elif a.sa_titles and os.path.exists(a.sa_titles):
+            for line in open(a.sa_titles, encoding="utf-8"):
+                f = line.rstrip("\r\n").split("\t")
+                if not line.startswith("#") and len(f) >= 2 and f[0] != "code":
+                    sa_titles[f[0]] = f[1]
         for cv, lst in by.items():
             # Rules reference crits as //cat[@val<"128"]; cat>=128 entries (build dates, cat 255) reuse
             # the same numbers (2103 = date 03/21 AND engine B58 in cat 13), so they must not label them.
@@ -378,7 +384,7 @@ def relabel(con, crits, series, context=None):
 
 
 PRIO = ("CASE o.source WHEN 'local' THEN 0 WHEN 'community' THEN 1 WHEN 'contributed' THEN 2 "
-        "WHEN 'cheatsheet' THEN 3 ELSE 4 END")
+        "WHEN 'sheet' THEN 3 WHEN 'cheatsheet' THEN 4 ELSE 5 END")
 PLACEHOLDER_FN = re.compile(r"^(\.|Group_[0-9A-F]+|[0-9A-F]{4}_B\d.*|.*_Byte_\d+(_\d+)?|.+_\d+_\d+_\d+)$")
 WERT = re.compile(r"^wert_\d+(?:\s+(.*?))?(?:\s*\[[^\]]*\])?$")
 
@@ -444,12 +450,15 @@ def load_all_names(a):
         src = "legacy" if os.path.basename(p).lower().startswith("legacy_") else "community"
         rows += load_user_names(p, src)
     rows += load_definition_xmls(a.definitions)
+    for p in a.sheet_names:
+        rows += load_user_names(p, "sheet")
     return rows + load_user_names(a.cheat_names, "cheatsheet") + load_user_names(a.my_names, "local")
 
 
 def apply_overrides(con):
     r"""Resolve name_override rows (version independent keys).
-    Priority: local (my_names.tsv) > community (names\*.tsv) > cheatsheet > legacy (names\legacy_*.tsv)."""
+    Priority: local (my_names.tsv) > community (names\*.tsv) > contributed (definition XMLs) >
+    sheet (names\cheatsheet\*.tsv) > cheatsheet (imported sheets) > legacy (names\legacy_*.tsv)."""
     con.executescript(("""
     UPDATE datagroup SET (name, name_source) = (SELECT o.name, o.source FROM name_override o JOIN cafd c ON c.cafd_id=o.cafd_id
          WHERE c.pk=datagroup.cafd_pk AND o.address=datagroup.address AND o.start IS NULL
@@ -475,7 +484,7 @@ def apply_overrides(con):
            AND o.mask=func.mask AND o.value_hex IS NULL AND coalesce(o.comment, '') != '');
     UPDATE val SET (label, label_source) = (SELECT
            -- cheat-sheet value names keep the derived rule hint: "wert_02 aktiv [SA5AC]"
-           CASE WHEN o.source = 'cheatsheet' OR (o.source IN ('local', 'community', 'contributed') AND o.name NOT LIKE 'wert%') THEN 'wert_' || printf('%02d', val.idx + 1) || ' ' || o.name ||
+           CASE WHEN o.source IN ('cheatsheet', 'sheet') OR (o.source IN ('local', 'community', 'contributed') AND o.name NOT LIKE 'wert%') THEN 'wert_' || printf('%02d', val.idx + 1) || ' ' || o.name ||
                 CASE WHEN instr(val.label, '[') > 0 THEN ' ' || substr(val.label, instr(val.label, '[')) ELSE '' END
                 ELSE o.name END, o.source FROM name_override o
          JOIN func f ON f.pk=val.func_pk JOIN cafd c ON c.pk=f.cafd_pk
@@ -523,6 +532,10 @@ def main():
     ap.add_argument("--names", nargs="*", default=P.name_files(), help="community name files (names\\*.tsv)")
     ap.add_argument("--definitions", nargs="*", default=P.contributed_xmls("definition"),
                     help="contributed CafdDefinition XMLs (definitions/**/*.xml)")
+    ap.add_argument("--sheet-names", nargs="*", default=P.sheet_name_files(),
+                    help="names taken from cheat sheets that can't be shipped (names\\cheatsheet\\*.tsv)")
+    ap.add_argument("--sa-titles", default=os.path.join(config.DATA, "sa_titles.tsv"),
+                    help="SA code -> title, used when no ISTA database is set")
     ap.add_argument("--my-names", default=P.my_names)
     ap.add_argument("--cheat-names", default=P.cheat_names,
                     help="from cheat_import.py (local cheat sheets); names files win")
@@ -539,7 +552,8 @@ def main():
     print(f"{len(crits)} FP criteria labelled: " +
           ", ".join(f"{k}={v}" for k, v in Counter(c['source'] for c in crits.values()).items()))
     overrides = load_all_names(a)
-    print(f"{len(overrides)} name rows from {len(a.names)} names files, {len(a.definitions)} definition XMLs"
+    print(f"{len(overrides)} name rows from {len(a.names)} names files, {len(a.sheet_names)} sheet-name files, "
+          f"{len(a.definitions)} definition XMLs"
           + (", cheat sheets" if os.path.exists(a.cheat_names or "") else "")
           + (", my_names.tsv" if os.path.exists(a.my_names or "") else ""))
 

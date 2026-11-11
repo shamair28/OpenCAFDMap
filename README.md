@@ -6,7 +6,10 @@ Current psdzdata ships CAFDs with every FDL name trimmed to `.`. E-Sys then show
 
 - **Value labels from BMW's own coding rules.** Every value still carries the rule that selects it, and it's turned into readable text. For example `wert_02 [SA5AC]` means "value 2, coded when option 5AC is fitted". `[n/a here]` means the rule never applies to your reference vehicle class.
 - **Names from the community.** `names\*.tsv` holds group, function and value names people have found: BimmerCode, screenshots, coding tables, backup diffs. Each name is keyed by CAFD id + datagroup + byte + mask, so it applies to every software version that has that function.
-- **Contributed definition XMLs.** `definitions\` holds definition files and cheat sheets people have shared. Their names are merged in the same way. A contributed definition is also used directly when your psdzdata doesn't have that CAFD version.
+- **Contributed definition XMLs and cheat sheets.** `definitions\` holds definition files and cheat sheets people have shared, including the public community cheat sheets (GPL-3.0). `names\cheatsheet\` adds BMW names from a cheat sheet whose file can't be shipped. Their names are merged in the same way. A contributed definition is also used directly when your psdzdata doesn't have that CAFD version.
+- **Option titles.** FP criteria show the factory option's title (`SA5AC High-beam assistant`), from `data\sa_titles.tsv` or your own decrypted ISTA database.
+
+Everything above ships with the repo, so a fresh install sees every shared name. Only your private `my_names.tsv` and cheat sheets you add yourself stay local.
 - **BMW-style placeholders** for everything not named yet: `<Group>_<start>_<end>_<mask>`, e.g. `PfFesMaster_9_9_255`.
 
 ### Before / after
@@ -48,8 +51,8 @@ Optional settings:
 |---|---|
 | **BimmerCode backups** folder | Your car's exact CAFD versions are always exported, and the Backup Editor can import the backups. |
 | **Reference vehicle** | Shortens labels to what matters for that vehicle class (series, market, LCI, engine). |
-| **Cheat sheets** folder | FDL cheat-sheet XMLs you already have. Imported locally only, never shared. |
-| **Export every CAFD version** | Exports all versions instead of the newest 3 plus your backups' versions. |
+| **Cheat sheets** folder | Extra FDL cheat-sheet XMLs you have (the public community sheets are already included). Imported locally only, never shared. |
+| **Export every CAFD version** | Exports all versions instead of the newest 3 plus the versions in your E-Sys SVT/CAF/NCD folders and your backups. |
 
 After editing names, press **Apply names** (a few seconds), then reopen the CAFD in E-Sys.
 
@@ -103,9 +106,11 @@ python ocm\check_names.py --db                    which names match your DB
 OpenLauncher.bat           OpenLauncher (openlauncher.py)
 Start-ESys-OpenCAFDMap.bat E-Sys with labels, using the saved settings
 names\                     community names (CC0)          <- contributions go here
+  cheatsheet\              BMW names from a cheat sheet that can't be shipped
 definitions\               contributed definition XMLs and cheat sheets   <- and here
+  community-cheatsheets\   public community cheat sheets (GPL-3.0, unchanged)
 definitions.json           definitions version + checksums (bumped by GitHub; used by the updater)
-data\                      FP criteria labels, ECU names, reference vehicles (contexts)
+data\                      FP criteria labels, SA option titles, ECU names, reference vehicles (contexts)
 esys\                      bootstrap.js + agent.js (in E-Sys), decrypt.js (headless), test_agent.js
 ocm\                       Python tools: build_defdb, export_defs, rules, defdb, bc_tool, bc_gui, ...
 docs\                      Backup Editor guide, examples

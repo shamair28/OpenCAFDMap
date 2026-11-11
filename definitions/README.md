@@ -22,14 +22,14 @@ The format the agent reads, used by `export_defs.py` and older hand-made definit
 - **How it's used:**
   - *Names*: every real group, function and value name in it is imported for all versions that have the same address, bytes and mask. Placeholders like `Group_3000` / `PfFesMaster_9_9_255` and derived labels like `wert_02 [SA5AC]` are ignored. `wert_02 aktiv [SA5AC]` gives the value name `aktiv`.
   - *Fallback*: if someone's psdzdata doesn't have that CAFD version, E-Sys uses the contributed file directly.
-- **Priority:** names files (`names\*.tsv`) > contributed definitions > cheat sheets > legacy names. Your private `my_names.tsv` always wins.
+- **Priority:** names files (`names\*.tsv`) > contributed definitions > `names\cheatsheet\*.tsv` > cheat sheets > legacy names. Your private `my_names.tsv` always wins.
 - **Making one:**
   - Export from your build: `python ocm\export_defs.py --ids 000043AF --latest 0 --out definitions\FLM2`.
   - Or hand-write one for the functions you know.
   - Add `source="..."` to the root element.
 
 ## 2. `<FDL>`: cheat sheets
-FDL cheat-sheet XMLs (`<FDL><cafd id><code description><group id><function start end mask comment>VALUE`). They're imported like local cheat sheets: each entry is checked against your DB, and BMW names in comments (`INBAND_RINGING (value: aktiv)`) become names.
+FDL cheat-sheet XMLs (`<FDL><cafd id><code description><group id><function start end mask comment>VALUE`). They're imported like local cheat sheets: each entry is checked against your DB, and BMW names in comments (`INBAND_RINGING (value: aktiv)`) become names. The public community sheets are already here, unchanged and under their GPL-3.0 licence: [community-cheatsheets/](community-cheatsheets/README.md).
 
 ## Rules
 - **Check first:** OpenLauncher → **Check contributions** (or `python ocm\check_names.py`). The same check runs on every pull request.

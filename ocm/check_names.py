@@ -67,12 +67,16 @@ def check_file(path, errors, warnings, keys):
         key = (cid, addr, st, en or st, mask, vhex)
         if name:
             prev = keys.get(key)
-            if prev and prev[0] != name and not rel.startswith(os.path.join("names", "legacy_")):
+            # legacy and cheat-sheet names rank below names\*.tsv, so a different name there isn't a conflict
+            lower = rel.startswith(os.path.join("names", "legacy_")) or rel.startswith(os.path.join("names", "cheatsheet"))
+            if prev and prev[0] != name and not lower:
                 errors.append(f"{where}: '{name}' conflicts with '{prev[0]}' at {prev[1]}")
             keys.setdefault(key, (name, where))
 
 
-VIN = re.compile(r"\b(?=[A-HJ-NPR-Z0-9]*[G-HJ-NPR-Z])[A-HJ-NPR-Z0-9]{17}\b")
+# 17 VIN characters with at least one letter and four digits (a real VIN's serial part is digits), so
+# German setting names like TEMPERATURWARNUNG aren't mistaken for one
+VIN = re.compile(r"\b(?=[A-HJ-NPR-Z0-9]*[G-HJ-NPR-Z])(?=(?:[A-HJ-NPR-Z]*[0-9]){4})[A-HJ-NPR-Z0-9]{17}\b")
 DEF_NAME = re.compile(r"^CAFD_([0-9A-F]{8})(?:_(\d{3})_(\d{3})_(\d{3}))?\.xml$", re.I)
 
 
@@ -128,14 +132,17 @@ def check_xml(path, errors, warnings):
         if not root.get("source") and not root.get("author"):
             warnings.append(f"{rel}: add source=\"...\" (or author) on <CafdDefinition> - where do the names come from?")
     elif tag == "FDL":
+        # cheat sheets are often third-party files kept unchanged: a bad entry is skipped by the import,
+        # so it's a warning, not a reason to reject the sheet
         for c in root.iter("cafd"):
             if not re.fullmatch(r"[0-9A-Fa-f]{1,8}", c.get("id") or ""):
-                errors.append(f"{rel}: cafd id '{c.get('id')}' is not hex")
+                warnings.append(f"{rel}: cafd id '{c.get('id')}' is not hex (entry skipped)")
             for g in c.iter("group"):
                 for f in g.iter("function"):
                     n += 1
                     if not (f.get("start") or "").isdigit():
-                        errors.append(f"{rel}: cafd {c.get('id')} group {g.get('id')}: function without start")
+                        warnings.append(f"{rel}: cafd {c.get('id')} group {g.get('id')}: function without start "
+                                        "(entry skipped)")
     else:
         errors.append(f"{rel}: root <{tag}> - expected <CafdDefinition> or <FDL> (cheat sheet)")
     return n
@@ -168,6 +175,7 @@ def main():
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     files = a.files or (sorted(glob.glob(os.path.join(config.NAMES, "*.tsv")))
+                        + sorted(glob.glob(os.path.join(config.NAMES, "cheatsheet", "*.tsv")))
                         + sorted(glob.glob(os.path.join(config.CONTRIB, "**", "*.xml"), recursive=True)))
     errors, warnings, keys = [], [], {}
     n_xml = n_xml_fn = 0

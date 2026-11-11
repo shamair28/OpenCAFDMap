@@ -99,6 +99,10 @@ class Paths:
         """Community name files: names\\*.tsv (legacy_*.tsv rank below cheat sheets)."""
         return sorted(glob.glob(os.path.join(NAMES, "*.tsv")))
 
+    def sheet_name_files(self):
+        """names\\cheatsheet\\*.tsv: names taken from cheat sheets whose files can't be shipped."""
+        return sorted(glob.glob(os.path.join(NAMES, "cheatsheet", "*.tsv")))
+
     def contributed_xmls(self, kind):
         """Contributed XMLs under definitions\\ by root element: kind 'definition' (CafdDefinition)
         or 'cheatsheet' (FDL)."""
