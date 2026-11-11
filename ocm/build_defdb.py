@@ -113,7 +113,10 @@ def load_crits(a):
         sa_titles = {}
         if a.ista and os.path.exists(a.ista):
             con = sqlite3.connect(f"file:{a.ista}?mode=ro", uri=True)
-            for name, en, de in con.execute("SELECT NAME, TITLE_ENGB, TITLE_DEDE FROM XEP_SALAPAS"):
+            # One code can have a car title (PRODUCT_TYPE P) and a motorcycle title (M), e.g. 255 =
+            # sport leather steering wheel / special model Dark White: take the car title first.
+            for name, en, de in con.execute("SELECT NAME, TITLE_ENGB, TITLE_DEDE FROM XEP_SALAPAS "
+                                            "ORDER BY PRODUCT_TYPE <> 'P', ID"):
                 if name and name not in sa_titles:
                     sa_titles[name] = en or de
             con.close()
