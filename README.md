@@ -10,8 +10,17 @@ Current psdzdata ships CAFDs with every FDL name trimmed to `.`. E-Sys then show
 - **BMW's untrimmed names.** `definitions\untrimmed\` holds BMW's own group, function and value names (including the `aktiv` / `nicht_aktiv` labels of on/off options) from untrimmed CAFD dumps: about 93,000 functions and 184,000 values across 89 CAFD ids. They're keyed by each datagroup's exact function layout, so they apply to every software version with that layout and never land where bits moved. They're used twice: built into your definition DB (Backup Editor and E-Sys), and applied by the E-Sys agent at runtime, so even CAFD versions that were never exported get named when you open them.
 - **Option titles.** FP criteria show the factory option's title (`SA5AC High-beam assistant`), from `data\sa_titles.tsv` or your own decrypted ISTA database.
 
-Everything above ships with the repo, so a fresh install sees every shared name. Only your private `my_names.tsv` and cheat sheets you add yourself stay local.
 - **BMW-style placeholders** for everything not named yet: `<Group>_<start>_<end>_<mask>`, e.g. `PfFesMaster_9_9_255`.
+
+Everything above ships with the repo, so a fresh install sees every shared name. Only your private `my_names.tsv` and cheat sheets you add yourself stay local.
+
+### Coverage
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/coverage-dark.svg">
+  <img src="docs/images/coverage-light.svg" alt="BMW names by main series: G029 Z4 98%, G042 2 Series Coupé 98%, G020 3/4 Series 96%, J029 Supra 94%, G015 8 Series 89%, G001 X3/X4 83%, G008 iX3 82%, G005 X5/X6 80%, G007 X7 77%, G030 5/6 Series 74%, G038 5 Series long 74%, G011 7 Series 68%, G060 5 Series 57%, G070 7 Series 43%, U006 2 Series Active Tourer 38% of CAFD ids" width="760">
+</picture>
+
+OpenLauncher works with any main series: set it in OpenLauncher. Untrimmed dumps of CAFDs your series doesn't share with the G20 raise its bar the most ([CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ### Before / after
 The same FLM2 NCD (CAFD 00006DF0) in E-Sys's FDL-Editor, first in stock E-Sys, then in E-Sys started from OpenLauncher:

@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="548" viewBox="0 0 760 548" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+<title id="t">BMW names by main series</title>
+<desc id="d">Share of each main series' CAFD ids that have BMW untrimmed names in OpenLauncher. G029 Z4: 57 of 58; G042 2 Series Coupé, M2: 53 of 54; G020 3/4 Series, i4, M3/M4: 89 of 93; J029 Supra: 48 of 51; G015 8 Series: 70 of 79; G001 X3, X4: 78 of 94; G008 iX3: 67 of 82; G005 X5, X6, X5 M: 78 of 98; G007 X7: 71 of 92; G030 5/6 Series, M5: 73 of 99; G038 5 Series long (China): 62 of 84; G011 7 Series (G11/G12): 73 of 108; G060 5 Series (G60): 4 of 7; G070 7 Series (G70): 3 of 7; U006 2 Series Active Tourer (U06): 3 of 8</desc>
+<rect x="0.5" y="0.5" width="759" height="547" rx="10" fill="#fcfcfb" stroke="#e1e0d9"/>
+<text x="24" y="34" font-size="17" font-weight="600" fill="#0b0b0b">BMW names by main series</text>
+<text x="24" y="56" font-size="13" fill="#52514e">Share of each series' CAFDs that come with BMW's own group, function and value names</text>
+<line x1="274.0" y1="78" x2="274.0" y2="470" stroke="#c3c2b7" stroke-width="1"/>
+<text x="274.0" y="486" font-size="11" fill="#898781" text-anchor="middle">0%</text>
+<line x1="364.0" y1="78" x2="364.0" y2="470" stroke="#e1e0d9" stroke-width="1"/>
+<text x="364.0" y="486" font-size="11" fill="#898781" text-anchor="middle">25%</text>
+<line x1="454.0" y1="78" x2="454.0" y2="470" stroke="#e1e0d9" stroke-width="1"/>
+<text x="454.0" y="486" font-size="11" fill="#898781" text-anchor="middle">50%</text>
+<line x1="544.0" y1="78" x2="544.0" y2="470" stroke="#e1e0d9" stroke-width="1"/>
+<text x="544.0" y="486" font-size="11" fill="#898781" text-anchor="middle">75%</text>
+<line x1="634.0" y1="78" x2="634.0" y2="470" stroke="#e1e0d9" stroke-width="1"/>
+<text x="634.0" y="486" font-size="11" fill="#898781" text-anchor="middle">100%</text>
+<text x="24" y="95.5" font-size="13" font-weight="600" fill="#0b0b0b">G029</text>
+<text x="70" y="95.5" font-size="13" fill="#52514e">Z4</text>
+<path d="M275,84 H623.7931034482758 Q627.7931034482758,84 627.7931034482758,88 V94 Q627.7931034482758,98 623.7931034482758,98 H275 Z" fill="#2a78d6"><title>G029 Z4: 57 of 58 CAFD ids</title></path>
+<text x="635.7931034482758" y="95.5" font-size="12" fill="#0b0b0b">98%<tspan fill="#898781">  57 of 58</tspan></text>
+<text x="24" y="121.5" font-size="13" font-weight="600" fill="#0b0b0b">G042</text>
+<text x="70" y="121.5" font-size="13" fill="#52514e">2 Series Coupé, M2</text>
+<path d="M275,110 H623.3333333333333 Q627.3333333333333,110 627.3333333333333,114 V120 Q627.3333333333333,124 623.3333333333333,124 H275 Z" fill="#2a78d6"><title>G042 2 Series Coupé, M2: 53 of 54 CAFD ids</title></path>
+<text x="635.3333333333333" y="121.5" font-size="12" fill="#0b0b0b">98%<tspan fill="#898781">  53 of 54</tspan></text>
+<text x="24" y="147.5" font-size="13" font-weight="600" fill="#0b0b0b">G020</text>
+<text x="70" y="147.5" font-size="13" fill="#52514e">3/4 Series, i4, M3/M4</text>
+<path d="M275,136 H614.516129032258 Q618.516129032258,136 618.516129032258,140 V146 Q618.516129032258,150 614.516129032258,150 H275 Z" fill="#2a78d6"><title>G020 3/4 Series, i4, M3/M4: 89 of 93 CAFD ids</title></path>
+<text x="626.516129032258" y="147.5" font-size="12" fill="#0b0b0b">96%<tspan fill="#898781">  89 of 93</tspan></text>
+<text x="24" y="173.5" font-size="13" font-weight="600" fill="#0b0b0b">J029</text>
+<text x="70" y="173.5" font-size="13" fill="#52514e">Supra</text>
+<path d="M275,162 H608.8235294117646 Q612.8235294117646,162 612.8235294117646,166 V172 Q612.8235294117646,176 608.8235294117646,176 H275 Z" fill="#2a78d6"><title>J029 Supra: 48 of 51 CAFD ids</title></path>
+<text x="620.8235294117646" y="173.5" font-size="12" fill="#0b0b0b">94%<tspan fill="#898781">  48 of 51</tspan></text>
+<text x="24" y="199.5" font-size="13" font-weight="600" fill="#0b0b0b">G015</text>
+<text x="70" y="199.5" font-size="13" fill="#52514e">8 Series</text>
+<path d="M275,188 H588.9873417721519 Q592.9873417721519,188 592.9873417721519,192 V198 Q592.9873417721519,202 588.9873417721519,202 H275 Z" fill="#2a78d6"><title>G015 8 Series: 70 of 79 CAFD ids</title></path>
+<text x="600.9873417721519" y="199.5" font-size="12" fill="#0b0b0b">89%<tspan fill="#898781">  70 of 79</tspan></text>
+<text x="24" y="225.5" font-size="13" font-weight="600" fill="#0b0b0b">G001</text>
+<text x="70" y="225.5" font-size="13" fill="#52514e">X3, X4</text>
+<path d="M275,214 H568.7234042553191 Q572.7234042553191,214 572.7234042553191,218 V224 Q572.7234042553191,228 568.7234042553191,228 H275 Z" fill="#2a78d6"><title>G001 X3, X4: 78 of 94 CAFD ids</title></path>
+<text x="580.7234042553191" y="225.5" font-size="12" fill="#0b0b0b">83%<tspan fill="#898781">  78 of 94</tspan></text>
+<text x="24" y="251.5" font-size="13" font-weight="600" fill="#0b0b0b">G008</text>
+<text x="70" y="251.5" font-size="13" fill="#52514e">iX3</text>
+<path d="M275,240 H564.1463414634146 Q568.1463414634146,240 568.1463414634146,244 V250 Q568.1463414634146,254 564.1463414634146,254 H275 Z" fill="#2a78d6"><title>G008 iX3: 67 of 82 CAFD ids</title></path>
+<text x="576.1463414634146" y="251.5" font-size="12" fill="#0b0b0b">82%<tspan fill="#898781">  67 of 82</tspan></text>
+<text x="24" y="277.5" font-size="13" font-weight="600" fill="#0b0b0b">G005</text>
+<text x="70" y="277.5" font-size="13" fill="#52514e">X5, X6, X5 M</text>
+<path d="M275,266 H556.530612244898 Q560.530612244898,266 560.530612244898,270 V276 Q560.530612244898,280 556.530612244898,280 H275 Z" fill="#2a78d6"><title>G005 X5, X6, X5 M: 78 of 98 CAFD ids</title></path>
+<text x="568.530612244898" y="277.5" font-size="12" fill="#0b0b0b">80%<tspan fill="#898781">  78 of 98</tspan></text>
+<text x="24" y="303.5" font-size="13" font-weight="600" fill="#0b0b0b">G007</text>
+<text x="70" y="303.5" font-size="13" fill="#52514e">X7</text>
+<path d="M275,292 H547.8260869565217 Q551.8260869565217,292 551.8260869565217,296 V302 Q551.8260869565217,306 547.8260869565217,306 H275 Z" fill="#2a78d6"><title>G007 X7: 71 of 92 CAFD ids</title></path>
+<text x="559.8260869565217" y="303.5" font-size="12" fill="#0b0b0b">77%<tspan fill="#898781">  71 of 92</tspan></text>
+<text x="24" y="329.5" font-size="13" font-weight="600" fill="#0b0b0b">G030</text>
+<text x="70" y="329.5" font-size="13" fill="#52514e">5/6 Series, M5</text>
+<path d="M275,318 H535.4545454545455 Q539.4545454545455,318 539.4545454545455,322 V328 Q539.4545454545455,332 535.4545454545455,332 H275 Z" fill="#2a78d6"><title>G030 5/6 Series, M5: 73 of 99 CAFD ids</title></path>
+<text x="547.4545454545455" y="329.5" font-size="12" fill="#0b0b0b">74%<tspan fill="#898781">  73 of 99</tspan></text>
+<text x="24" y="355.5" font-size="13" font-weight="600" fill="#0b0b0b">G038</text>
+<text x="70" y="355.5" font-size="13" fill="#52514e">5 Series long (China)</text>
+<path d="M275,344 H535.7142857142858 Q539.7142857142858,344 539.7142857142858,348 V354 Q539.7142857142858,358 535.7142857142858,358 H275 Z" fill="#2a78d6"><title>G038 5 Series long (China): 62 of 84 CAFD ids</title></path>
+<text x="547.7142857142858" y="355.5" font-size="12" fill="#0b0b0b">74%<tspan fill="#898781">  62 of 84</tspan></text>
+<text x="24" y="381.5" font-size="13" font-weight="600" fill="#0b0b0b">G011</text>
+<text x="70" y="381.5" font-size="13" fill="#52514e">7 Series (G11/G12)</text>
+<path d="M275,370 H513.3333333333334 Q517.3333333333334,370 517.3333333333334,374 V380 Q517.3333333333334,384 513.3333333333334,384 H275 Z" fill="#2a78d6"><title>G011 7 Series (G11/G12): 73 of 108 CAFD ids</title></path>
+<text x="525.3333333333334" y="381.5" font-size="12" fill="#0b0b0b">68%<tspan fill="#898781">  73 of 108</tspan></text>
+<text x="24" y="407.5" font-size="13" font-weight="600" fill="#0b0b0b">G060</text>
+<text x="70" y="407.5" font-size="13" fill="#52514e">5 Series (G60)</text>
+<path d="M275,396 H475.7142857142857 Q479.7142857142857,396 479.7142857142857,400 V406 Q479.7142857142857,410 475.7142857142857,410 H275 Z" fill="#2a78d6"><title>G060 5 Series (G60): 4 of 7 CAFD ids</title></path>
+<text x="487.7142857142857" y="407.5" font-size="12" fill="#0b0b0b">57%<tspan fill="#898781">  4 of 7</tspan></text>
+<text x="24" y="433.5" font-size="13" font-weight="600" fill="#0b0b0b">G070</text>
+<text x="70" y="433.5" font-size="13" fill="#52514e">7 Series (G70)</text>
+<path d="M275,422 H424.2857142857143 Q428.2857142857143,422 428.2857142857143,426 V432 Q428.2857142857143,436 424.2857142857143,436 H275 Z" fill="#2a78d6"><title>G070 7 Series (G70): 3 of 7 CAFD ids</title></path>
+<text x="436.2857142857143" y="433.5" font-size="12" fill="#0b0b0b">43%<tspan fill="#898781">  3 of 7</tspan></text>
+<text x="24" y="459.5" font-size="13" font-weight="600" fill="#0b0b0b">U006</text>
+<text x="70" y="459.5" font-size="13" fill="#52514e">2 Series Active Tourer (U06)</text>
+<path d="M275,448 H405.0 Q409.0,448 409.0,452 V458 Q409.0,462 405.0,462 H275 Z" fill="#2a78d6"><title>U006 2 Series Active Tourer (U06): 3 of 8 CAFD ids</title></path>
+<text x="417.0" y="459.5" font-size="12" fill="#0b0b0b">38%<tspan fill="#898781">  3 of 8</tspan></text>
+<text x="24" y="508" font-size="11.5" fill="#52514e">On the CAFD versions these series share with the G20, about 89% of functions are named.</text>
+<text x="24" y="524" font-size="11.5" fill="#52514e">G60, G70 and U06 list only 7-8 CAFD ids in psdzdata, so each id moves their share a lot. Data: OpenLauncher v2.1.0.</text>
+</svg>
