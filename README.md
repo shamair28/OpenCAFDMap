@@ -43,8 +43,10 @@ It also includes a **BimmerCode Backup Editor**: edit parameters inside BimmerCo
 ## Quick start
 1. Open **OpenLauncher** (the shortcut, or `OpenLauncher.bat`).
 2. Check the **E-Sys folder** (found automatically if it's in the usual place) and the **main series** (`G020` covers G20/G21/G22/G23/G26/G28/G8x). Leave psdzdata empty to use the one E-Sys is set up with. Press **Save settings**.
-3. Press **Build definitions**. The first run decrypts your psdzdata's CAFDs for that series with E-Sys's own PsdZ (it can take a while), then builds the definition DB and the E-Sys definition files.
-4. Press **Start E-Sys with Open CAFD Map**, connect or open your coding data as usual, and open a CAFD: the tree shows names and labels.
+3. Press **Start E-Sys with Open CAFD Map**, connect or open your coding data as usual, and open a CAFD: the tree shows names and labels. No build needed.
+   - The first start reads your psdzdata's FA→FP mapping once (about 20 seconds) so option codes like `SA5AC` show up.
+   - A CAFD opened for the first time shows BMW's untrimmed names straight away. Within a few seconds its full definition is built in the background (every shared name, value labels from the coding rules, your `my_names.tsv`) and the tree updates by itself. Later opens are instant.
+4. Optional: press **Build definitions** to decrypt and index all of your psdzdata's CAFDs for that series (it can take a while). You need it for the **BimmerCode Backup Editor** and the command-line search tools; E-Sys doesn't.
 
 Optional settings:
 
@@ -78,6 +80,7 @@ Open CAFD Map **only runs inside an E-Sys it starts itself**: OpenLauncher's **S
 - **Nothing is installed into E-Sys**: no edited `.bat`, jar, config file, `-javaagent` hook or environment variable. The E-Sys folder is only read. E-Sys started any other way (`E-Sys.exe`, `E-Sys.bat`, another launcher) never sees our code.
 - Both scripts **refuse to run** unless OpenLauncher's `-Docm.launcher=1` switch is present.
 - The agent only **renames tree nodes in memory** (group, function and value names). It never changes coding data, NCDs or anything E-Sys sends to the car. If it fails to load, E-Sys starts normally without labels.
+- When you open a CAFD that has no definition file yet, the agent saves that CAFD as E-Sys loaded it to `workspace\runtime_cafd\` and runs [`ocm/runtime_defs.py`](ocm/runtime_defs.py) on it, the same labelling code as **Build definitions**. Everything stays on your machine. **Apply names** refreshes these definitions too.
 
 If you use a commercial launcher, keep using it as before. It runs its own E-Sys without Open CAFD Map; use OpenLauncher when you want the labels.
 
@@ -96,6 +99,7 @@ The names are the heart of the project, and every name helps everyone with that 
 ```
 python ocm\pipeline.py build | names | check     same as OpenLauncher's buttons
 python ocm\esys.py launch                         start E-Sys with Open CAFD Map
+python ocm\runtime_defs.py --all                  rebuild the definitions E-Sys made on demand
 python ocm\defdb.py search 5AC --cafd 000043AF    query the definition DB
 python ocm\bc_tool.py show latest:BDC_BODY3 --group 3221
 python ocm\cod_import.py --sheet                  BimmerCode backup diffs -> a sheet to name
@@ -117,7 +121,7 @@ ocm\                       Python tools: build_defdb, export_defs, rules, defdb,
 docs\                      Backup Editor guide, examples
 assets\                    OpenLauncher icon (make_icon.py redraws it)
 installer\                 OpenLauncher-Setup.bat + release builder (used by the release workflow)
-workspace\                 (created locally, git-ignored) DB, decrypted cache, definitions, logs, backups
+workspace\                 (created locally, git-ignored) DB, decrypted cache, definitions, runtime_cafd, logs, backups
 ```
 
 ## Licence

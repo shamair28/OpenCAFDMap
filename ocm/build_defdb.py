@@ -611,7 +611,56 @@ def bmw_placeholders(con):
 
 
 # ------------------------------------------------------------------ main
-def main():
+def cache_files(folder):
+    """(cafd_id, main, sub, patch, path) of every decrypted CAFD in folder, sorted."""
+    files = []
+    for p in glob.glob(os.path.join(folder, "cafd_*.xml.gz")):
+        m = FILE_RE.search(os.path.basename(p))
+        if m:
+            files.append((m.group(1).upper(), int(m.group(2)), int(m.group(3)), int(m.group(4)), p))
+    return sorted(files)
+
+
+def ingest(con, files, series, progress=True):
+    """Insert parsed CAFDs (cache_files rows) into a DB created with SCHEMA."""
+    rule_ids = dict(con.execute("SELECT raw, id FROM rule").fetchall())
+
+    def rid(raw):
+        if raw is None:
+            return None
+        i = rule_ids.get(raw)
+        if i is None:
+            i = rule_ids[raw] = len(rule_ids) + 1
+            con.execute("INSERT INTO rule(id, raw) VALUES(?,?)", (i, raw))
+        return i
+
+    for n, (cid, mv, sv, pv, path) in enumerate(files, 1):
+        ver = f"{mv:03d}_{sv:03d}_{pv:03d}"
+        cpk = con.execute("INSERT INTO cafd(cafd_id,main,sub,patch,version,series,ecu,src) VALUES(?,?,?,?,?,?,?,?)",
+                          (cid, mv, sv, pv, ver, series, None, os.path.basename(path))).lastrowid
+        try:
+            dgs = parse_cafd(path, series)
+        except Exception as e:
+            print(f"  parse error {path}: {e}", file=sys.stderr)
+            continue
+        for dg in dgs:
+            dpk = con.execute("INSERT INTO datagroup(cafd_pk,address,dg_class,units,active_rule) VALUES(?,?,?,?,?)",
+                              (cpk, dg["address"], dg["dg_class"], dg["units"], rid(dg["active_raw"]))).lastrowid
+            for f in dg["funcs"]:
+                fpk = con.execute(
+                    "INSERT INTO func(cafd_pk,dg_pk,address,idx,start,end,size,mask,mask_hex,default_hex) "
+                    "VALUES(?,?,?,?,?,?,?,?,?,?)",
+                    (cpk, dpk, dg["address"], f["idx"], f["start"], f["end"], f["size"], f["mask"],
+                     f["mask_hex"], f["default_hex"])).lastrowid
+                con.executemany("INSERT INTO val(func_pk,idx,hex,is_default,rule_id) VALUES(?,?,?,?,?)",
+                                [(fpk, vi, hx, int(d), rid(raw)) for vi, hx, d, raw in f["vals"]])
+        if progress and n % 200 == 0:
+            con.commit()
+            print(f"  {n}/{len(files)}")
+    con.commit()
+
+
+def parse_args(argv=None):
     P = config.paths()
     ap = argparse.ArgumentParser()
     ap.add_argument("--cache", default=P.cache)
@@ -639,7 +688,11 @@ def main():
     ap.add_argument("--context", default=P.context or "none",
                     help="FP xml of a reference vehicle: simplify labels for its vehicle class "
                          "(series/body/market/LCI/engine/date); 'none' for full rules")
-    a = ap.parse_args()
+    return ap.parse_args(argv)
+
+
+def main():
+    a = parse_args()
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
     crits = load_crits(a)
@@ -666,12 +719,7 @@ def main():
         print("relabelled", a.out, "context:", a.context or "none")
         return
 
-    files = []
-    for p in glob.glob(os.path.join(a.cache, "cafd_*.xml.gz")):
-        m = FILE_RE.search(os.path.basename(p))
-        if m:
-            files.append((m.group(1).upper(), int(m.group(2)), int(m.group(3)), int(m.group(4)), p))
-    files.sort()
+    files = cache_files(a.cache)
     if not files:
         sys.exit(f"no decrypted CAFDs in {a.cache}: run the decrypt step first")
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
@@ -686,43 +734,7 @@ def main():
     con.executescript(SCHEMA)
     con.executemany("INSERT INTO meta VALUES(?,?)", [("series", a.series), ("cache", a.cache), ("fafp", a.fafp)])
 
-
-    rule_ids = {}
-
-    def rid(raw):
-        if raw is None:
-            return None
-        i = rule_ids.get(raw)
-        if i is None:
-            i = rule_ids[raw] = len(rule_ids) + 1
-            con.execute("INSERT INTO rule(id, raw) VALUES(?,?)", (i, raw))
-        return i
-
-    for n, (cid, mv, sv, pv, path) in enumerate(files, 1):
-        ver = f"{mv:03d}_{sv:03d}_{pv:03d}"
-        ecu = None
-        cpk = con.execute("INSERT INTO cafd(cafd_id,main,sub,patch,version,series,ecu,src) VALUES(?,?,?,?,?,?,?,?)",
-                          (cid, mv, sv, pv, ver, a.series, ecu, os.path.basename(path))).lastrowid
-        try:
-            dgs = parse_cafd(path, a.series)
-        except Exception as e:
-            print(f"  parse error {path}: {e}", file=sys.stderr)
-            continue
-        for dg in dgs:
-            dpk = con.execute("INSERT INTO datagroup(cafd_pk,address,dg_class,units,active_rule) VALUES(?,?,?,?,?)",
-                              (cpk, dg["address"], dg["dg_class"], dg["units"], rid(dg["active_raw"]))).lastrowid
-            for f in dg["funcs"]:
-                fpk = con.execute(
-                    "INSERT INTO func(cafd_pk,dg_pk,address,idx,start,end,size,mask,mask_hex,default_hex) "
-                    "VALUES(?,?,?,?,?,?,?,?,?,?)",
-                    (cpk, dpk, dg["address"], f["idx"], f["start"], f["end"], f["size"], f["mask"],
-                     f["mask_hex"], f["default_hex"])).lastrowid
-                con.executemany("INSERT INTO val(func_pk,idx,hex,is_default,rule_id) VALUES(?,?,?,?,?)",
-                                [(fpk, vi, hx, int(d), rid(raw)) for vi, hx, d, raw in f["vals"]])
-        if n % 200 == 0:
-            con.commit()
-            print(f"  {n}/{len(files)}")
-    con.commit()
+    ingest(con, files, a.series)
     con.executescript(INDEXES)
     con.executemany("INSERT INTO name_override VALUES(?,?,?,?,?,?,?,?,?)", overrides)
     ctx = load_fp(a.context) if a.context and a.context != "none" else None

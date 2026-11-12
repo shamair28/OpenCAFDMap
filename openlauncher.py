@@ -90,7 +90,7 @@ class OpenLauncher(tk.Tk):
         b = ttk.LabelFrame(af, text="Definitions", padding=6)
         b.pack(side="left", fill="y")
         self.btns = []
-        for text, step, tip in (("Build definitions", "build", "first time, or after a psdzdata update"),
+        for text, step, tip in (("Build definitions", "build", "optional for E-Sys; needed for the Backup Editor"),
                                 ("Apply names", "names", "after editing names\\*.tsv / my_names.tsv"),
                                 ("Check contributions", "check", "names + definition XMLs, before you contribute")):
             row = ttk.Frame(b)  # the row is created first so it doesn't cover its button
@@ -289,12 +289,26 @@ class OpenLauncher(tk.Tk):
                                             "(PsdZ). Start another one anyway?"):
             return
         try:
-            pr = esys.launch(self.cfg)
+            esys.check_esys(self.cfg)
         except SystemExit as e:
             messagebox.showerror("Start E-Sys", str(e))
             return
-        self.write(f"E-Sys started with Open CAFD Map (pid {pr.pid}). Labels apply when you open a CAFD; "
-                   f"log: {os.path.join(config.paths().logs, 'agent.log')}")
+        self.btn_esys.state(["disabled"])
+        cfg = dict(self.cfg)
+
+        def work():
+            try:
+                esys.prepare(cfg, self.q.put)
+                pr = esys.launch(cfg)
+                self.q.put(f"E-Sys started with Open CAFD Map (pid {pr.pid}). Labels apply when you open a CAFD; "
+                           f"one without a definition yet is labelled within seconds. "
+                           f"Log: {os.path.join(config.Paths(cfg).logs, 'agent.log')}")
+            except SystemExit as e:
+                self.q.put(f"FAILED: {e}")
+            except Exception as e:  # noqa: BLE001
+                self.q.put(f"FAILED: {type(e).__name__}: {e}")
+            self.q.put(lambda: self.btn_esys.state(["!disabled"]))
+        threading.Thread(target=work, daemon=True).start()
 
     def start_bc(self):
         self.save(quiet=True)

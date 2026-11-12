@@ -63,11 +63,40 @@ def esys_vm_options(cfg):
             "-Dsun.java2d.uiScale.enabled=true", f"-Dsun.java2d.uiScale={props.get('UI.Scale', 'auto')}"]
 
 
+def pythonw():
+    """Python without a console window, for the agent's on-demand definition builds."""
+    exe = sys.executable
+    w = os.path.join(os.path.dirname(exe), "pythonw.exe")
+    return w if os.path.exists(w) else exe
+
+
+def prepare(cfg=None, out=print):
+    """Before E-Sys starts: the FA->FP mapping (option-code labels) and FP_<series>.xml, if there's no build yet.
+    Quick, and only does anything the first time."""
+    cfg = cfg or config.load()
+    p = config.Paths(cfg)
+    if os.path.exists(p.fafp) and os.path.exists(os.path.join(p.generated, f"FP_{cfg['series']}.xml")):
+        return 0
+    py = sys.executable
+    if py.lower().endswith("pythonw.exe"):
+        py = py[:-len("pythonw.exe")] + "python.exe"
+    pr = subprocess.run([py, "-u", os.path.join(os.path.dirname(os.path.abspath(__file__)), "runtime_defs.py"),
+                         "--prepare"], capture_output=True, text=True, encoding="utf-8", errors="replace",
+                        env=dict(os.environ, PYTHONIOENCODING="utf-8"), creationflags=NO_WINDOW,
+                        stdin=subprocess.DEVNULL)
+    for line in (pr.stdout or "").splitlines():
+        if line.startswith(("Reading", "PROGRESS", "NOTE", "wrote")):
+            out(line)
+    if pr.returncode:
+        out(f"Preparing labels failed (exit {pr.returncode}); E-Sys starts anyway. {(pr.stderr or '').strip()[-300:]}")
+    return pr.returncode
+
+
 def launch_command(cfg):
     d = check_esys(cfg)
     p = config.Paths(cfg)
-    if not os.path.isdir(p.generated):
-        raise SystemExit(f"No definitions yet ({p.generated}). Build them first.")
+    # no build needed: CAFDs without a definition file get one on demand (ocm/runtime_defs.py)
+    os.makedirs(p.generated, exist_ok=True)
     os.makedirs(p.logs, exist_ok=True)
     javaw = os.path.join(d, "jre", "bin", "javaw.exe")
     props = [
@@ -77,6 +106,9 @@ def launch_command(cfg):
         f"-Docm.agent={os.path.join(config.ESYS_SCRIPTS, 'agent.js')}",
         f"-Docm.log={os.path.join(p.logs, 'agent.log')}",
         f"-Docm.series={cfg['series']}",
+        f"-Docm.runtime={os.path.join(p.workspace, 'runtime_cafd', cfg['series'])}",  # CAFDs labelled on demand
+        f"-Docm.python={pythonw()}",
+        f"-Docm.tools={os.path.dirname(os.path.abspath(__file__))}",
         "-Dnashorn.args=--no-deprecation-warning",
     ]
     return [javaw] + esys_vm_options(cfg) + props + [
@@ -121,6 +153,7 @@ def main():
     if len(sys.argv) < 2 or sys.argv[1] not in ("launch", "run"):
         sys.exit(__doc__)
     if sys.argv[1] == "launch":
+        prepare()
         pr = launch()
         print(f"E-Sys started with Open CAFD Map (pid {pr.pid})")
     else:

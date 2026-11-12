@@ -93,6 +93,66 @@
     return contribIndex[verName.toUpperCase()] || contribIndex[("CAFD_" + cafId + ".xml").toUpperCase()] || null;
   }
 
+  // Definitions on demand (ocm/runtime_defs.py): a CAFD opened without a definition file is saved as E-Sys loaded
+  // it (before any renaming) and labelled in the background by the same code as "Build definitions". When the
+  // file appears in DEF_DIR the next tick relabels the tree. Nothing is sent anywhere; files stay in the workspace.
+  var RUNTIME_DIR = System.getProperty("ocm.runtime") ? String(System.getProperty("ocm.runtime")) : null;
+  var PYTHON = System.getProperty("ocm.python") ? String(System.getProperty("ocm.python")) : null;
+  var TOOLS = System.getProperty("ocm.tools") ? String(System.getProperty("ocm.tools")) : null;
+  var CAF_NS = "http://bmw.com/2005/psdz.data.caf";
+  var runtimeState = System.getProperties().get("ocm.runtimeState");
+  if (!runtimeState) { runtimeState = new java.util.concurrent.ConcurrentHashMap(); System.getProperties().put("ocm.runtimeState", runtimeState); }
+  // objects already renamed by an earlier agent instance (hot reload) must not be saved: their names aren't BMW's
+  var seenCafs = System.getProperties().get("ocm.seenCafs");
+  if (!seenCafs) { seenCafs = java.util.Collections.synchronizedMap(new java.util.WeakHashMap()); System.getProperties().put("ocm.seenCafs", seenCafs); }
+  var runtimeExec = System.getProperties().get("ocm.runtimeExec");
+  if (!runtimeExec && RUNTIME_DIR && PYTHON && TOOLS) {
+    runtimeExec = java.util.concurrent.Executors.newSingleThreadExecutor(new java.util.concurrent.ThreadFactory({
+      newThread: function (r) { var t = new java.lang.Thread(r, "OpenCAFDMap-Definitions"); t.setDaemon(true); return t; }
+    }));
+    System.getProperties().put("ocm.runtimeExec", runtimeExec);
+  }
+  var jaxbCtx = null;
+
+  function saveCafXml(caf, file) {
+    var cls = caf.getClass();
+    if (!jaxbCtx) jaxbCtx = javax.xml.bind.JAXBContext.newInstance(Java.to([cls], "java.lang.Class[]"));
+    var el = new javax.xml.bind.JAXBElement(new javax.xml.namespace.QName(CAF_NS, "caf"), cls, caf);
+    file.getParentFile().mkdirs();
+    var tmp = new File(file.getPath() + ".tmp");
+    var os = new java.util.zip.GZIPOutputStream(new java.io.FileOutputStream(tmp));
+    try { jaxbCtx.createMarshaller().marshal(el, os); } finally { os.close(); }
+    if (file.exists()) file["delete"]();
+    if (!tmp.renameTo(file)) throw "could not write " + file;
+  }
+
+  function requestDefinition(caf, tag, cafFile) {
+    if (!runtimeExec || runtimeState.containsKey(tag)) return;
+    if (!cafFile.exists()) {
+      if (seenCafs.containsKey(caf)) return;
+      try { saveCafXml(caf, cafFile); } catch (eSave) { runtimeState.put(tag, "failed"); log("Could not save " + tag + " for labelling: " + eSave); return; }
+    }
+    runtimeState.put(tag, "pending");
+    log("Building the definition for " + tag + " in the background");
+    runtimeExec.submit(new java.lang.Runnable({ run: function () {
+      var t0 = System.currentTimeMillis();
+      try {
+        var pb = new java.lang.ProcessBuilder(Java.to([PYTHON, "-u", new File(TOOLS, "runtime_defs.py").getPath(),
+                                                       cafFile.getAbsolutePath()], "java.lang.String[]"));
+        pb.redirectErrorStream(true);
+        pb.redirectOutput(java.lang.ProcessBuilder.Redirect.appendTo(new File(LOG_FILE.getParentFile(), "runtime_defs.log")));
+        pb.environment().put("PYTHONIOENCODING", "utf-8");
+        var rc = pb.start().waitFor();
+        runtimeState.put(tag, rc === 0 ? "done" : "failed");
+        log((rc === 0 ? "Built the definition for " : "Building the definition failed for ") + tag + " ("
+            + ((System.currentTimeMillis() - t0) / 1000).toFixed(1) + "s" + (rc === 0 ? "" : ", exit " + rc + ", see runtime_defs.log") + ")");
+      } catch (eRun) {
+        runtimeState.put(tag, "failed");
+        log("Building the definition failed for " + tag + ": " + eRun);
+      }
+    }}));
+  }
+
   // BMW untrimmed names packed by datagroup layout (definitions/untrimmed/<CAFD id>.tsv.gz, ocm/untrimmed.py).
   // Applied at runtime to whatever is still a placeholder, so versions that were never exported get names too.
   var untrimmedCache = {};
@@ -239,6 +299,12 @@
       return false;
     }
     processedCafs.put(caf, stateKey);
+
+    var tag = "CAFD_" + cafId + "_" + mainVer + "_" + subVer + "_" + patchVer;
+    if (RUNTIME_DIR && !new File(DEF_DIR, tag + ".xml").exists()) {
+      requestDefinition(caf, tag, new File(RUNTIME_DIR, "cafd_" + cafId + "_" + mainVer + "_" + subVer + "_" + patchVer + ".xml.gz"));
+    }
+    seenCafs.put(caf, true);
 
     var def = null;
     try {
@@ -407,11 +473,11 @@
     }
     dumpSb.append('</CafdDefinition>\r\n');
 
-    var tag = "CAFD_" + cafId + "_" + mainVer + "_" + subVer + "_" + patchVer;
     var stats = " (groups=" + grpRenamed + ", fns=" + fnRenamed + ", values=" + cpRenamed + ", read=" + interpUpdated
       + ", untrimmed=" + untrimmedHits + ")";
-    if (!def && untrimmedHits) log("Labelled " + tag + " from untrimmed names only" + stats);
-    else if (!def) log("No definition for " + tag + ": export it (Build definitions with 'all versions', or open the backup's version)");
+    var pending = runtimeState.get(tag) === "pending" ? "; full labels follow once its definition is built" : "";
+    if (!def && untrimmedHits) log("Labelled " + tag + " from untrimmed names only" + stats + pending);
+    else if (!def) log("No definition for " + tag + (pending || ": press Build definitions, or see runtime_defs.log"));
     else log("Labelled " + tag + stats);
     if (DUMP_DIR) {
       try {

@@ -68,6 +68,10 @@ def build(out, full=True):
         _py("build_defdb.py", ["--relabel"], out)
     out("== Exporting E-Sys definitions")
     _py("export_defs.py", [], out)
+    rdir = os.path.join(P.workspace, "runtime_cafd", P.cfg["series"])
+    if os.path.isdir(rdir) and any(n.endswith(".xml.gz") for n in os.listdir(rdir)):
+        out("== Relabelling the CAFDs E-Sys labelled on demand")
+        _py("runtime_defs.py", ["--all"], out)
     out("Done.")
 
 
