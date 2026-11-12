@@ -2,4 +2,5 @@
 HU_MGU (MGU21)	00003E52	BimmerCode backup diag 0x63 + FSC apps 0x01C9/01CC (MGU21)
 IHKA4	000051C9	jokinawa/JPSaid G20 coding table (Module column)
 DKOMBI4	00004508	jokinawa/JPSaid G20 coding table (Module column)
+DKOMBI5	00004508	E-Sys SVT: this CAFD also runs on the DKOMBI5 base variant (IC_B-G4_5)
 SAS2	000042C1	jokinawa/JPSaid G20 coding table (Module column)

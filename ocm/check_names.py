@@ -80,6 +80,39 @@ VIN = re.compile(r"\b(?=[A-HJ-NPR-Z0-9]*[G-HJ-NPR-Z])(?=(?:[A-HJ-NPR-Z]*[0-9]){4
 DEF_NAME = re.compile(r"^CAFD_([0-9A-F]{8})(?:_(\d{3})_(\d{3})_(\d{3}))?\.xml$", re.I)
 
 
+def check_untrimmed(path, errors, warnings):
+    r"""definitions\untrimmed\<CAFD id>.tsv.gz (ocm\untrimmed.py): kind address layout_hash start end mask value_hex name."""
+    import gzip
+    rel = os.path.relpath(path, config.ROOT)
+    if not re.fullmatch(r"[0-9A-F]{8}\.tsv\.gz", os.path.basename(path)):
+        errors.append(f"{rel}: name it <8 upper-case hex CAFD id>.tsv.gz")
+        return 0
+    n = 0
+    try:
+        for ln, line in enumerate(gzip.open(path, "rt", encoding="utf-8"), 1):
+            if line.startswith("#") or not line.strip():
+                continue
+            n += 1
+            f = (line.rstrip("\r\n").split("\t") + [""] * 8)[:8]
+            kind, addr, h, st, en, mask, vhex, name = f
+            where = f"{rel}:{ln}"
+            if kind not in ("G", "F", "V") or not ADDR.match(addr) or not name:
+                errors.append(f"{where}: expected G/F/V, a 4-hex address and a name")
+            elif not (h == "*" and kind == "G") and not re.fullmatch(r"[0-9a-f]{16}", h):
+                errors.append(f"{where}: layout hash must be 16 lower-case hex digits (see ocm\\untrimmed.py)")
+            elif kind != "G" and (not st.isdigit() or not en.isdigit() or not MASK.match(mask)):
+                errors.append(f"{where}: start/end must be byte numbers and mask like 00000001b")
+            elif kind == "V" and not HEXV.match(vhex):
+                errors.append(f"{where}: value_hex must be upper-case hex bytes")
+            if VIN.search(name):
+                errors.append(f"{where}: contains something that looks like a VIN: remove it")
+            if len(errors) > 50:
+                break
+    except (OSError, EOFError) as e:
+        errors.append(f"{rel}: not a readable gzip file ({e})")
+    return n
+
+
 def check_xml(path, errors, warnings):
     """definitions\\**\\*.xml: a CafdDefinition (our definition format) or an FDL cheat sheet."""
     import xml.etree.ElementTree as ET
@@ -176,11 +209,14 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     files = a.files or (sorted(glob.glob(os.path.join(config.NAMES, "*.tsv")))
                         + sorted(glob.glob(os.path.join(config.NAMES, "cheatsheet", "*.tsv")))
-                        + sorted(glob.glob(os.path.join(config.CONTRIB, "**", "*.xml"), recursive=True)))
+                        + sorted(glob.glob(os.path.join(config.CONTRIB, "**", "*.xml"), recursive=True))
+                        + sorted(glob.glob(os.path.join(config.CONTRIB, "untrimmed", "*.tsv.gz"))))
     errors, warnings, keys = [], [], {}
-    n_xml = n_xml_fn = 0
+    n_xml = n_xml_fn = n_untr = 0
     for p in files:
-        if p.lower().endswith(".xml"):
+        if p.lower().endswith(".tsv.gz"):
+            n_untr += check_untrimmed(p, errors, warnings)
+        elif p.lower().endswith(".xml"):
             n_xml += 1
             n_xml_fn += check_xml(p, errors, warnings) or 0
         else:
@@ -189,7 +225,9 @@ def main():
         print("warning:", w)
     for e in errors:
         print("ERROR:", e)
-    print(f"{len(files) - n_xml} names files ({len(keys)} names), {n_xml} definition XMLs ({n_xml_fn} functions): "
+    if n_untr:
+        print(f"untrimmed packages: {n_untr} names")
+    print(f"{sum(1 for p in files if p.lower().endswith('.tsv'))} names files ({len(keys)} names), {n_xml} definition XMLs ({n_xml_fn} functions): "
           f"{len(errors)} errors, {len(warnings)} warnings")
     if a.db:
         db = a.db if isinstance(a.db, str) else config.paths().db

@@ -93,6 +93,63 @@
     return contribIndex[verName.toUpperCase()] || contribIndex[("CAFD_" + cafId + ".xml").toUpperCase()] || null;
   }
 
+  // BMW untrimmed names packed by datagroup layout (definitions/untrimmed/<CAFD id>.tsv.gz, ocm/untrimmed.py).
+  // Applied at runtime to whatever is still a placeholder, so versions that were never exported get names too.
+  var untrimmedCache = {};
+  function loadUntrimmed(cafId) {
+    if (untrimmedCache.hasOwnProperty(cafId)) return untrimmedCache[cafId];
+    var res = null;
+    try {
+      var f = CONTRIB_DIR ? new File(new File(CONTRIB_DIR, "untrimmed"), cafId + ".tsv.gz") : null;
+      if (f && f.exists()) {
+        res = { groups: {}, fallback: {} };
+        var br = new java.io.BufferedReader(new java.io.InputStreamReader(
+          new java.util.zip.GZIPInputStream(new java.io.FileInputStream(f)), "UTF-8"));
+        var line;
+        while ((line = br.readLine()) !== null) {
+          line = String(line);
+          if (!line || line.charAt(0) === "#") continue;
+          var p = line.split("\t");
+          if (p[0] === "G" && p[2] === "*") { res.fallback[p[1]] = p[7]; continue; }
+          var key = p[1] + "|" + p[2];
+          var g = res.groups[key] || (res.groups[key] = { G: null, F: {}, V: {} });
+          if (p[0] === "G") g.G = p[7];
+          else if (p[0] === "F") g.F[p[3] + "|" + p[4] + "|" + p[5]] = p[7];
+          else if (p[0] === "V") g.V[p[3] + "|" + p[4] + "|" + p[5] + "|" + p[6]] = p[7];
+        }
+        br.close();
+      }
+    } catch (eU) {
+      log("Error reading untrimmed names for CAFD_" + cafId + ": " + eU);
+      res = null;
+    }
+    untrimmedCache[cafId] = res;
+    return res;
+  }
+
+  // Same as ocm/untrimmed.py layout_hash: md5 of "start:end:mask;..." over the group's functions, 16 hex chars.
+  function layoutHash(fns) {
+    var parts = [];
+    for (var j = 0; j < fns.size(); j++) {
+      var si = fns.get(j).getStorageInfo();
+      var st = (si && si.getStart()) ? si.getStart().intValue() : 0;
+      var en = (si && si.getEnd()) ? si.getEnd().intValue() : st;
+      var mk = (si && si.getMask() && si.getMask().getValue()) ? String(si.getMask().getValue()) : "11111111b";
+      parts.push(st + ":" + en + ":" + normMask(mk));
+    }
+    var dig = java.security.MessageDigest.getInstance("MD5").digest(
+      new java.lang.String(parts.join(";")).getBytes("US-ASCII"));
+    return bytesToHex(dig).toLowerCase().substring(0, 16);
+  }
+
+  // Names that only stand in for a missing one: E-Sys's ".", our Group_XXXX / *_Byte_* / <group>_<s>_<e>_<mask>
+  // fallbacks, and bare value numbers ("wert_02", "wert_02 [SA5AC]").
+  function isPlaceholder(n) {
+    n = String(n || "");
+    return !n || n === "." || n === "custom_wert" || /^Group_[0-9A-Fa-f]{4}$/.test(n) || n.indexOf("_Byte_") >= 0
+      || /^\*?\s*wert_\d+(\s*\[[^\]]*\])?$/.test(n);
+  }
+
   function normMask(m) {
     var s = String(m || "").trim();
     if (/^[01]+b$/i.test(s)) return s.toLowerCase();
@@ -203,6 +260,8 @@
     dumpSb.append('<?xml version="1.0" encoding="utf-8"?>\r\n');
     dumpSb.append('<CafdDefinition schemaVersion="1" ecu="' + xmlEscape(hdr ? hdr.getEcuName() : "ECU") + '" cafdId="' + cafId + '" mainVersion="' + mainVer + '" subVersion="' + subVer + '" patchVersion="' + patchVer + '">\r\n');
 
+    var uPack = loadUntrimmed(cafId);
+    var untrimmedHits = 0;
     var fnCounter = 1;
     var grpRenamed = 0;
     var fnRenamed = 0;
@@ -220,6 +279,16 @@
       } else if (!dg.getName() || String(dg.getName()) === ".") {
         dg.setName("Group_" + addr);
         grpRenamed++;
+      }
+
+      var uG = null;
+      if (uPack) {
+        var uFns = dg.getFunction();
+        if (uFns && uFns.size() > 0) uG = uPack.groups[addr + "|" + layoutHash(uFns)] || null;
+        if (isPlaceholder(dg.getName())) {
+          var uGName = (uG && uG.G) || uPack.fallback[addr];
+          if (uGName) { dg.setName(uGName); untrimmedHits++; }
+        }
       }
 
       var grpNameForDump = String(dg.getName());
@@ -265,6 +334,11 @@
             fn.setName(autoName);
             fnRenamed++;
           }
+          var uKey = start + "|" + end + "|" + normMask(maskStr);
+          if (uG && uG.F[uKey] && isPlaceholder(fn.getName())) {
+            fn.setName(uG.F[uKey]);
+            untrimmedHits++;
+          }
 
           var defHex = extractTValueHex(fn.getDefVal());
           var fnIdHex = padHex(java.lang.Integer.toHexString(fnCounter++), 16);
@@ -294,6 +368,12 @@
               }
 
               var finalLabel = customLabel ? customLabel : defaultWertLabel;
+              var uVal = (uG && cpHex) ? uG.V[uKey + "|" + cpHex] : null;
+              if (uVal && isPlaceholder(finalLabel)) {
+                var hintAt = finalLabel.indexOf("[");
+                finalLabel = defaultWertLabel + " " + uVal + (hintAt >= 0 ? " " + finalLabel.substring(hintAt) : "");
+                untrimmedHits++;
+              }
               cp.setParamName(finalLabel);
               cpRenamed++;
               if (cpHex && !hexToLabel[cpHex]) {
@@ -328,8 +408,10 @@
     dumpSb.append('</CafdDefinition>\r\n');
 
     var tag = "CAFD_" + cafId + "_" + mainVer + "_" + subVer + "_" + patchVer;
-    var stats = " (groups=" + grpRenamed + ", fns=" + fnRenamed + ", values=" + cpRenamed + ", read=" + interpUpdated + ")";
-    if (!def) log("No definition for " + tag + ": export it (Build definitions with 'all versions', or open the backup's version)");
+    var stats = " (groups=" + grpRenamed + ", fns=" + fnRenamed + ", values=" + cpRenamed + ", read=" + interpUpdated
+      + ", untrimmed=" + untrimmedHits + ")";
+    if (!def && untrimmedHits) log("Labelled " + tag + " from untrimmed names only" + stats);
+    else if (!def) log("No definition for " + tag + ": export it (Build definitions with 'all versions', or open the backup's version)");
     else log("Labelled " + tag + stats);
     if (DUMP_DIR) {
       try {

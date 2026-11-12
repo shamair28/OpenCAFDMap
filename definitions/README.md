@@ -22,7 +22,7 @@ The format the agent reads, used by `export_defs.py` and older hand-made definit
 - **How it's used:**
   - *Names*: every real group, function and value name in it is imported for all versions that have the same address, bytes and mask. Placeholders like `Group_3000` / `PfFesMaster_9_9_255` and derived labels like `wert_02 [SA5AC]` are ignored. `wert_02 aktiv [SA5AC]` gives the value name `aktiv`.
   - *Fallback*: if someone's psdzdata doesn't have that CAFD version, E-Sys uses the contributed file directly.
-- **Priority:** names files (`names\*.tsv`) > contributed definitions > `names\cheatsheet\*.tsv` > cheat sheets > legacy names. Your private `my_names.tsv` always wins.
+- **Priority:** names files (`names\*.tsv`) > BMW untrimmed names (`untrimmed\`) > contributed definitions > `names\cheatsheet\*.tsv` > cheat sheets > legacy names. Your private `my_names.tsv` always wins.
 - **Making one:**
   - Export from your build: `python ocm\export_defs.py --ids 000043AF --latest 0 --out definitions\FLM2`.
   - Or hand-write one for the functions you know.
@@ -40,3 +40,10 @@ FDL cheat-sheet XMLs (`<FDL><cafd id><code description><group id><function start
 
   The check rejects psdzdata files and VINs.
 - **Licence:** only submit files you have the right to share. A file keeps any licence stated in it (e.g. GPL-3.0 for many community cheat sheets). Files without one are contributed under CC0 like `names\`.
+
+## 3. `untrimmed\`: BMW's untrimmed names
+`untrimmed\<CAFD id>.tsv.gz`, one file per CAFD id, written by `ocm\untrimmed.py`. Each row is `kind address layout_hash start end mask value_hex name`:
+- **kind** is G (group), F (function) or V (value).
+- **layout_hash** identifies the datagroup's exact function layout. A G row with `*` gives that address's group name for any layout.
+
+To add dumps, run `python ocm\untrimmed.py pack-dumps <folder>`. It only adds names, never removes them, and the check validates every row.

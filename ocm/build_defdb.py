@@ -335,7 +335,7 @@ def load_fp(path):
     return fp
 
 
-def relabel(con, crits, series, context=None):
+def relabel(con, crits, series, context=None, cache=None):
     """context: FP dict of a reference vehicle. Its vehicle-class criteria (series, body, market,
     lifecycle, engine, build date...) are substituted into every rule so labels only show the
     option codes that matter for that class. rule.readable always keeps the full rule."""
@@ -381,6 +381,8 @@ def relabel(con, crits, series, context=None):
     con.executemany("UPDATE func SET hint=? WHERE pk=?", upd_func)
     print(f"  {len(upd_func)} functions hinted")
     apply_overrides(con)
+    apply_untrimmed(con, UNTRIMMED_DIR)
+    native_names(con, cache)
 
 
 PRIO = ("CASE o.source WHEN 'local' THEN 0 WHEN 'community' THEN 1 WHEN 'contributed' THEN 2 "
@@ -453,6 +455,98 @@ def load_all_names(a):
     for p in a.sheet_names:
         rows += load_user_names(p, "sheet")
     return rows + load_user_names(a.cheat_names, "cheatsheet") + load_user_names(a.my_names, "local")
+
+
+NATIVE_DG = re.compile(r'<datagroup\b[^>]*?address="([0-9A-Fa-f]+)"[^>]*?name="([^"]*)"')
+
+
+def native_names(con, cache):
+    """psdzdata keeps only the SYSTEM datagroup names (TL_ID, CAF_ID, SIGNATURE, each holding one function of the
+    same name); every other name is trimmed to '.'. They're read once from the decrypted cache into native_name and
+    re-applied after every relabel, so E-Sys shows them instead of Group_37EF."""
+    con.execute("CREATE TABLE IF NOT EXISTS native_name(cafd_pk INT, address TEXT, name TEXT)")
+    if not con.execute("SELECT 1 FROM native_name LIMIT 1").fetchone() and cache and os.path.isdir(cache):
+        rows = []
+        for cpk, src in con.execute("SELECT pk, src FROM cafd").fetchall():
+            p = os.path.join(cache, src or "")
+            if src and os.path.exists(p):
+                s = gzip.open(p, "rt", encoding="utf-8", errors="replace").read()
+                rows += [(cpk, a.upper(), n) for a, n in NATIVE_DG.findall(s) if n not in (".", "")]
+        con.executemany("INSERT INTO native_name VALUES(?,?,?)", rows)
+        print(f"  {len(rows)} native datagroup names read from the cache")
+    con.execute("""UPDATE datagroup SET (name, name_source) = (SELECT n.name, 'native' FROM native_name n
+                     WHERE n.cafd_pk=datagroup.cafd_pk AND n.address=datagroup.address)
+                   WHERE name IS NULL AND EXISTS (SELECT 1 FROM native_name n
+                     WHERE n.cafd_pk=datagroup.cafd_pk AND n.address=datagroup.address)""")
+    con.execute("""UPDATE func SET (name, name_source) = (SELECT d.name, 'native' FROM datagroup d WHERE d.pk=func.dg_pk)
+                   WHERE name_source='derived' AND dg_pk IN (SELECT pk FROM datagroup WHERE name_source='native')""")
+
+
+UNTRIMMED_DIR = os.path.join(config.CONTRIB, "untrimmed")
+
+
+def apply_untrimmed(con, folder):
+    r"""definitions\untrimmed\<CAFD id>.tsv.gz (ocm\untrimmed.py): BMW's untrimmed names keyed by datagroup layout.
+    Every datagroup here whose layout hash matches gets the names (group names also by address as a fallback).
+    Beats contributed definitions, cheat sheets and placeholders; my_names.tsv and names\*.tsv still win.
+    Set-based: a few joins, not one UPDATE per name."""
+    import untrimmed as U
+    files = glob.glob(os.path.join(folder, "*.tsv.gz")) if folder and os.path.isdir(folder) else []
+    if not files:
+        return
+    con.executescript("""
+        DROP TABLE IF EXISTS temp.dg_hash; DROP TABLE IF EXISTS temp.u_g; DROP TABLE IF EXISTS temp.u_f;
+        DROP TABLE IF EXISTS temp.u_v;
+        CREATE TEMP TABLE dg_hash(dg_pk INTEGER PRIMARY KEY, hash TEXT);
+        CREATE TEMP TABLE u_g(cafd_id TEXT, address TEXT, hash TEXT, name TEXT);
+        CREATE TEMP TABLE u_f(cafd_id TEXT, address TEXT, hash TEXT, start INT, end INT, mask TEXT, name TEXT);
+        CREATE TEMP TABLE u_v(cafd_id TEXT, address TEXT, hash TEXT, start INT, end INT, mask TEXT, hex TEXT, name TEXT);
+    """)
+    ids = [os.path.basename(p)[:8].upper() for p in files]
+    for cid in ids:
+        groups, fallback = U.load(cid, folder)
+        con.executemany("INSERT INTO u_g VALUES(?,?,?,?)", [(cid, a, "*", n) for a, n in fallback.items()]
+                        + [(cid, a, h, g["G"]) for (a, h), g in groups.items() if g["G"]])
+        con.executemany("INSERT INTO u_f VALUES(?,?,?,?,?,?,?)",
+                        [(cid, a, h, *k, n) for (a, h), g in groups.items() for k, n in g["F"].items()])
+        con.executemany("INSERT INTO u_v VALUES(?,?,?,?,?,?,?,?)",
+                        [(cid, a, h, *k, n) for (a, h), g in groups.items() for k, n in g["V"].items()])
+        rows = defaultdict(list)
+        for dpk, st, en, mk in con.execute(
+                "SELECT f.dg_pk, f.start, f.end, f.mask FROM func f JOIN cafd c ON c.pk=f.cafd_pk "
+                "WHERE c.cafd_id=? ORDER BY f.dg_pk, f.idx", (cid,)):
+            rows[dpk].append((st, en, mk))
+        con.executemany("INSERT INTO dg_hash VALUES(?,?)", [(d, U.layout_hash(l)) for d, l in rows.items()])
+    con.executescript("""
+        CREATE INDEX temp.ix_ug ON u_g(cafd_id, address, hash);
+        CREATE INDEX temp.ix_uf ON u_f(cafd_id, address, hash, start, end, mask);
+        CREATE INDEX temp.ix_uv ON u_v(cafd_id, address, hash, start, end, mask, hex);
+        UPDATE datagroup SET name = coalesce(
+              (SELECT u.name FROM u_g u JOIN cafd c ON c.cafd_id=u.cafd_id JOIN dg_hash h ON h.dg_pk=datagroup.pk
+               WHERE c.pk=datagroup.cafd_pk AND u.address=datagroup.address AND u.hash=h.hash),
+              (SELECT u.name FROM u_g u JOIN cafd c ON c.cafd_id=u.cafd_id
+               WHERE c.pk=datagroup.cafd_pk AND u.address=datagroup.address AND u.hash='*')),
+            name_source='untrimmed'
+         WHERE coalesce(name_source, '') NOT IN ('local', 'community')
+           AND EXISTS (SELECT 1 FROM u_g u JOIN cafd c ON c.cafd_id=u.cafd_id
+                       WHERE c.pk=datagroup.cafd_pk AND u.address=datagroup.address);
+        UPDATE func SET name = u.name, name_source = 'untrimmed'
+          FROM dg_hash h, cafd c, u_f u
+         WHERE h.dg_pk = func.dg_pk AND c.pk = func.cafd_pk AND u.cafd_id = c.cafd_id AND u.address = func.address
+           AND u.hash = h.hash AND u.start = func.start AND u.end = func.end AND u.mask = lower(func.mask)
+           AND func.name_source NOT IN ('local', 'community');
+        -- value names keep the value number and rule hint: "wert_02 nicht_aktiv [SA5AC]"
+        UPDATE val SET label = 'wert_' || printf('%02d', val.idx + 1) || ' ' || u.name ||
+                 CASE WHEN instr(val.label, '[') > 0 THEN ' ' || substr(val.label, instr(val.label, '[')) ELSE '' END,
+               label_source = 'untrimmed'
+          FROM func f, dg_hash h, cafd c, u_v u
+         WHERE f.pk = val.func_pk AND h.dg_pk = f.dg_pk AND c.pk = f.cafd_pk AND u.cafd_id = c.cafd_id
+           AND u.address = f.address AND u.hash = h.hash AND u.start = f.start AND u.end = f.end
+           AND u.mask = lower(f.mask) AND u.hex = val.hex AND val.label_source NOT IN ('local', 'community');
+    """)
+    n = [con.execute(f"SELECT count(*) FROM {t} WHERE {c}='untrimmed'").fetchone()[0]
+         for t, c in (("datagroup", "name_source"), ("func", "name_source"), ("val", "label_source"))]
+    print(f"  untrimmed names ({len(ids)} CAFD ids): {n[0]} groups, {n[1]} functions, {n[2]} values named")
 
 
 def apply_overrides(con):
@@ -566,7 +660,7 @@ def main():
         ctx = load_fp(a.context) if a.context and a.context != "none" else None
         con.execute("INSERT OR REPLACE INTO meta VALUES('context', ?)", (a.context or "none",))
         refresh_ecus(con, a)
-        relabel(con, crits, a.series, ctx)
+        relabel(con, crits, a.series, ctx, a.cache)
         con.commit()
         con.close()
         print("relabelled", a.out, "context:", a.context or "none")
@@ -634,7 +728,7 @@ def main():
     ctx = load_fp(a.context) if a.context and a.context != "none" else None
     con.execute("INSERT OR REPLACE INTO meta VALUES('context', ?)", (a.context or "none",))
     refresh_ecus(con, a)
-    relabel(con, crits, a.series, ctx)
+    relabel(con, crits, a.series, ctx, a.cache)
     con.commit()
     con.execute("VACUUM")
     con.close()
