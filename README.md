@@ -96,6 +96,8 @@ If you use a commercial launcher, keep using it as before. It runs its own E-Sys
 ## BimmerCode Backup Editor
 OpenLauncher → **BimmerCode Backup Editor**. Pick a backup, find a parameter by name, stage values, and **Write new backup**. Your original backups are never modified. Every new backup is a byte copy with only the edited coding bytes changed, verified after writing. Read [docs/BC_EDITOR.md](docs/BC_EDITOR.md) before restoring one.
 
+![BimmerCode Backup Editor: backups on the left, the BDC_BODY3 parameters with BMW names in the middle, and the selected parameter's values (wert_01 aktiv, wert_02 nicht_aktiv) on the right](docs/images/bc_editor.png)
+
 ## Contributing names
 The names are the heart of the project, and every name helps everyone with that ECU. See [CONTRIBUTING.md](CONTRIBUTING.md). In short:
 
