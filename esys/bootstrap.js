@@ -22,6 +22,20 @@
     } catch (e2) {}
   }
 
-  var Framework = Java.type("com.bmw.esys.gui.control.Framework");
-  Framework.main(Java.to([], "java.lang.String[]"));
+  // E-Sys's main class comes from its own E-Sys.bat (ocm\esys.py). If E-Sys fails while starting, log why and
+  // exit: otherwise Java's GUI thread keeps the process alive and the splash screen stays up forever.
+  var mainClass = String(System.getProperty("ocm.main") || "com.bmw.esys.gui.control.Framework");
+  try {
+    Java.type(mainClass).main(Java.to([], "java.lang.String[]"));
+  } catch (e) {
+    var msg = "[bootstrap] E-Sys " + (System.getProperty("ocm.esysVersion") || "") + " failed to start (" + mainClass + "): " + e;
+    System.err.println(msg);
+    if (e instanceof java.lang.Throwable) e.printStackTrace();
+    try {
+      var w2 = new java.io.FileWriter(String(System.getProperty("ocm.log")), true);
+      w2.write(msg + "\r\n");
+      w2.close();
+    } catch (e3) {}
+    System.exit(3);
+  }
 })();

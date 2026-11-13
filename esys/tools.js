@@ -458,8 +458,15 @@
   }
 
   // Cheat Sheet window (esys/cheatsheet.js): E-Sys's FDL Editor + cheat sheet pane.
+  // Apply edits through E-Sys's FDL Editor internals, so the Cheat Sheet window only runs on E-Sys versions it was
+  // tested on. Compare NCD is read-only and stays available everywhere the section can be added.
+  var ESYS_VER = String(System.getProperty("ocm.esysVersion") || "");
+  var TESTED = String(System.getProperty("ocm.testedEsys") || "25.").split(",").some(function (p) {
+    return p && ESYS_VER.indexOf(p) === 0;
+  });
   var cheat = null;
-  try {
+  if (!TESTED) log("Cheat Sheet window off: not tested on E-Sys " + (ESYS_VER || "(unknown version)"));
+  else try {
     var CONTRIB = System.getProperty("ocm.contrib") ? String(System.getProperty("ocm.contrib")) : null;
     cheat = load(new File(new File(String(System.getProperty("ocm.agent"))).getParentFile(), "cheatsheet.js").getPath())({
       log: log, cls: cls, field: field, esysFrame: esysFrame, selectOurBar: selectOurBar,

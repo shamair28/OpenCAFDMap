@@ -85,12 +85,16 @@ The definitions version (`definitions.json`, e.g. `2026.11.09.1`) is bumped auto
 ## How the labels get into E-Sys (and why it can't conflict with other launchers)
 Open CAFD Map **only runs inside an E-Sys it starts itself**: OpenLauncher's **Start E-Sys** button, or `Start-ESys-OpenCAFDMap.bat`.
 
-- It starts a **new** E-Sys process from E-Sys's own JRE, classpath and VM options, the same as `E-Sys.bat`. Java's built-in JavaScript runner is the entry point. [`esys/bootstrap.js`](esys/bootstrap.js) loads [`esys/agent.js`](esys/agent.js), then calls E-Sys's normal main class.
+- It starts a **new** E-Sys process from E-Sys's own JRE, classpath and VM options, read from your E-Sys version's own `E-Sys.bat` (only the classpath, working folder, `-X`/`-D` options and main class are taken; other additions such as `-javaagent` are left out). Java's built-in JavaScript runner is the entry point. [`esys/bootstrap.js`](esys/bootstrap.js) loads [`esys/agent.js`](esys/agent.js), then calls E-Sys's normal main class.
 - **Nothing is installed into E-Sys**: no edited `.bat`, jar, config file, `-javaagent` hook or environment variable. The E-Sys folder is only read. E-Sys started any other way (`E-Sys.exe`, `E-Sys.bat`, another launcher) never sees our code.
 - Both scripts **refuse to run** unless OpenLauncher's `-Docm.launcher=1` switch is present.
 - The agent only **renames tree nodes in memory** (group, function and value names). It never changes coding data, NCDs or anything E-Sys sends to the car. If it fails to load, E-Sys starts normally without labels.
 - When you open a CAFD that has no definition file yet, the agent saves that CAFD as E-Sys loaded it to `workspace\runtime_cafd\` and runs [`ocm/runtime_defs.py`](ocm/runtime_defs.py) on it, the same labelling code as **Build definitions**. Everything stays on your machine. **Apply names** refreshes these definitions too.
 - The agent also adds an **OpenLauncher** section to E-Sys's left navigation bar ([`esys/tools.js`](esys/tools.js), below). It's only in E-Sys started by OpenLauncher.
+
+**E-Sys versions:** tested with E-Sys 25.10 (Java 11) and 3.35.3 (Java 8). E-Sys versions on Java 15 or newer can't be started this way (Java's JavaScript runner was removed) and OpenLauncher says so. The Cheat Sheet window is only enabled on tested versions (25.x); labels and Compare NCD work wherever E-Sys's layout allows.
+
+**Logs** are in `workspace\logs\`: `esys.log` (E-Sys's own output for the latest start, previous one in `esys.prev.log`; attach it to bug reports), `agent.log` (labels and tools), `runtime_defs.log` and `decrypt.log`. If E-Sys fails while starting, it closes instead of leaving the splash screen up, and OpenLauncher shows the reason.
 
 If you use a commercial launcher, keep using it as before. It runs its own E-Sys without Open CAFD Map; use OpenLauncher when you want the labels.
 

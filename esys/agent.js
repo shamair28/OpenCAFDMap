@@ -710,9 +710,11 @@
         while (true) {
           try {
             java.lang.Thread.sleep(900);
-            var curMod = SCRIPT_FILE.lastModified();
+            // Number(): Java 8's Nashorn hands longs over as java.lang.Long objects, and !== between two
+            // Long objects compares identity, which made every tick look like an edit (endless hot reloads).
+            var curMod = Number(SCRIPT_FILE.lastModified());
             var prevModObj = System.getProperties().get("ocm.lastModified");
-            var prevMod = prevModObj ? prevModObj.longValue() : 0;
+            var prevMod = prevModObj ? Number(prevModObj.longValue()) : 0;
             if (curMod > 0 && curMod !== prevMod) {
               log("Detected change in agent.js, hot-reloading...");
               var sem = new javax.script.ScriptEngineManager();

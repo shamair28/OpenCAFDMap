@@ -7,6 +7,7 @@ import queue
 import subprocess
 import sys
 import threading
+import time
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
@@ -299,10 +300,23 @@ class OpenLauncher(tk.Tk):
         def work():
             try:
                 esys.prepare(cfg, self.q.put)
+                d = cfg["esys_dir"]
+                spec = esys.launch_spec(d)
+                self.q.put(f"E-Sys {esys.esys_version(d) or '(unknown version)'}, Java {esys.java_major(d) or '?'}; "
+                           f"launch recipe: {spec['source']}")
                 pr = esys.launch(cfg)
                 self.q.put(f"E-Sys started with Open CAFD Map (pid {pr.pid}). Labels apply when you open a CAFD; "
                            f"one without a definition yet is labelled within seconds. "
-                           f"Log: {os.path.join(config.Paths(cfg).logs, 'agent.log')}")
+                           f"Logs: {config.Paths(cfg).logs} (esys.log, agent.log)")
+                self.q.put(lambda: self.btn_esys.state(["!disabled"]))
+                # E-Sys that dies while starting: say so here, with the reason from esys.log
+                for _ in range(90):
+                    if pr.poll() is not None:
+                        self.q.put(f"E-Sys stopped during startup (exit {pr.returncode}). Last lines of esys.log:")
+                        for line in esys.log_tail(cfg):
+                            self.q.put("    " + line)
+                        break
+                    time.sleep(1)
             except SystemExit as e:
                 self.q.put(f"FAILED: {e}")
             except Exception as e:  # noqa: BLE001
