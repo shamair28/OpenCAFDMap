@@ -463,7 +463,7 @@
     var CONTRIB = System.getProperty("ocm.contrib") ? String(System.getProperty("ocm.contrib")) : null;
     cheat = load(new File(new File(String(System.getProperty("ocm.agent"))).getParentFile(), "cheatsheet.js").getPath())({
       log: log, cls: cls, field: field, esysFrame: esysFrame, selectOurBar: selectOurBar,
-      communityDir: CONTRIB ? new File(CONTRIB, "community-cheatsheets").getPath() : null,
+      contribDir: CONTRIB,   // every FDL cheat sheet under definitions\ (community-cheatsheets and contributed ones)
       localDir: System.getProperty("ocm.cheatdir") ? String(System.getProperty("ocm.cheatdir")) : null
     });
   } catch (eC) {

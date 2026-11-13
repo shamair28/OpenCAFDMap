@@ -18,7 +18,7 @@
     ok:      { text: "✓ compatible", color: GREEN },
     set:     { text: "● already set", color: BLUE },
     partial: { text: "◐ partly compatible", color: ORANGE },
-    custom:  { text: "✎ custom value (set by hand)", color: ORANGE },
+    custom:  { text: "✎ custom value", color: ORANGE },
     nofunc:  { text: "✗ not in this version", color: RED },
     noval:   { text: "✗ value not in this version", color: RED },
     bad:     { text: "✗ not for this version", color: RED }
@@ -44,11 +44,28 @@
     return out;
   }
 
+  function allXml(dir) {
+    var out = [], stack = [new File(dir)];
+    while (stack.length) {
+      var d = stack.pop(), kids = d.listFiles();
+      if (!kids) continue;
+      java.util.Arrays.sort(kids);
+      for (var i = 0; i < kids.length; i++) {
+        if (kids[i].isDirectory()) { if (String(kids[i].getName()) !== "untrimmed") stack.push(kids[i]); }
+        else if (/\.xml$/i.test(String(kids[i].getName()))) out.push(kids[i]);
+      }
+    }
+    return out;
+  }
+
   function loadSheets() {
     sheetsByCafd = {};
     sheetCount = 0;
     var sources = [];
-    if (h.communityDir) xmlFiles(h.communityDir).forEach(function (f) { sources.push({ f: f, kind: "community (GPL-3.0)" }); });
+    if (h.contribDir) allXml(h.contribDir).forEach(function (f) {
+      var community = String(f.getParentFile().getName()) === "community-cheatsheets";
+      sources.push({ f: f, kind: community ? "community (GPL-3.0)" : "contributed" });
+    });
     if (h.localDir) xmlFiles(h.localDir).forEach(function (f) { sources.push({ f: f, kind: "local" }); });
     var dbf = javax.xml.parsers.DocumentBuilderFactory.newInstance();
     for (var i = 0; i < sources.length; i++) {
@@ -163,6 +180,22 @@
   }
 
   // One cheat-sheet step against the open CAFD.
+  // Cheat-sheet value as hex: "07", "0x07", or a byte list like "04, 52, 44" / "04 52 44" (whole records such as Lmm1).
+  // Anything else (aktiv, nicht_aktiv) is a value name. Returns null for names.
+  function sheetHex(v) {
+    var t = String(v || "").trim();
+    if (/^[0-9A-Fa-f]{1,2}([\s,;]+[0-9A-Fa-f]{1,2})+$/.test(t))
+      return t.split(/[\s,;]+/).map(function (b) { return b.length < 2 ? "0" + b : b; }).join("").toUpperCase();
+    t = t.replace(/^0x/i, "");
+    return /^[0-9A-Fa-f]+$/.test(t) ? t.toUpperCase() : null;
+  }
+  // Long values (whole records) are shown shortened: "04 52 44 64 00 00 ... (252 bytes)"
+  function showHex(hx) {
+    hx = String(hx || "");
+    if (hx.length <= 16) return hx;
+    return hx.substring(0, 12).replace(/(..)/g, "$1 ") + "... (" + (hx.length / 2) + " bytes)";
+  }
+
   function checkStep(ix, s) {
     var hit = ix.fns[s.addr + "|" + s.start + "|" + s.end + "|" + s.mask];
     var r = { step: s, hit: hit, cp: null, status: "nofunc", fname: "", current: "", target: s.value };
@@ -170,21 +203,32 @@
     r.fname = String(hit.fn.getName() || "");
     var interp = hit.fn.getInterpretation();
     var curHex = interp ? tvalueHex(interp.getValues()) : "";
-    r.current = curHex + (interp && interp.getParamName() ? "  " + interp.getParamName() : "");
-    var cps = hit.fn.getCondParam(), isHex = /^[0-9A-Fa-f]+$/.test(s.value), want = normName(s.value);
+    r.current = showHex(curHex) + (interp && interp.getParamName() ? "  " + interp.getParamName() : "");
+    var cps = hit.fn.getCondParam(), hexv = sheetHex(s.value), want = normName(s.value);
     for (var i = 0; cps && i < cps.size(); i++) {
       var cp = cps.get(i), hx = tvalueHex(cp.getValues()), pn = String(cp.getParamName() || "");
-      if ((isHex && padHex(s.value, hx.length) === hx) || (!isHex && (normName(valueName(pn)) === want || normName(pn) === want))) {
+      if ((hexv !== null && padHex(hexv, hx.length) === hx) ||
+          (hexv === null && (normName(valueName(pn)) === want || normName(pn) === want))) {
         r.cp = cp; r.cpHex = hx;
         break;
       }
     }
     if (r.cp) {
-      r.target = r.cpHex + "  " + r.cp.getParamName();
+      r.target = showHex(r.cpHex) + "  " + r.cp.getParamName();
       r.status = r.cpHex === curHex ? "set" : "ok";
-    } else {
-      r.status = isHex ? "custom" : "noval";
+      return r;
     }
+    if (hexv === null) { r.status = "noval"; return r; }
+    // a raw value that isn't one of the function's werte: applied through E-Sys's raw value field (Werte=)
+    var nBytes = s.end - s.start + 1;
+    if (s.end > s.start && hexv.length !== nBytes * 2) {
+      r.status = "noval";
+      r.target = showHex(hexv) + "  (" + hexv.length / 2 + " bytes, the function has " + nBytes + ")";
+      return r;
+    }
+    r.customHex = s.end > s.start ? hexv : padHex(hexv, Math.max(2, curHex.length || 2));
+    r.target = showHex(r.customHex) + "  (custom value)";
+    r.status = r.customHex === curHex ? "set" : "custom";
     return r;
   }
 
@@ -238,6 +282,42 @@
     tree.setSelectionPath(path);
     fdlController().setValue(enumNode.getUserObject(), name);
     tree.getModel().nodeChanged(enumNode);
+    tree.scrollPathToVisible(path);
+  }
+
+  // Custom value: set the "Ausgelesen" raw value (Werte=) with a TValue parsed by E-Sys's own TValueFormat, through
+  // FDLController.setValue like an edit by hand. The parsed value is checked byte for byte before it's set.
+  function applyCustom(tree, r) {
+    var fnode = r.hit.node, wrapNode = null;
+    for (var i = 0; i < fnode.getChildCount() && !wrapNode; i++) {
+      var c = fnode.getChildAt(i);
+      if (!/TInterpretations$/.test(cn(uoOf(c)))) continue;
+      for (var j = 0; j < c.getChildCount(); j++) {
+        var w = c.getChildAt(j).getUserObject();
+        if (/AttributeWrapper$/.test(cn(w)) && /TValueFormat$/.test(cn(w.getFormat()))) { wrapNode = c.getChildAt(j); break; }
+      }
+    }
+    if (!wrapNode) throw "no raw value field for " + r.fname;
+    var wrapper = wrapNode.getUserObject(), fmt = wrapper.getFormat();
+    // write the value the way this format writes values (same separator between bytes)
+    var sample = String(fmt.format(wrapper.getValue()) || "");
+    var sepM = /[0-9A-Fa-f]{2}([^0-9A-Fa-f]+)[0-9A-Fa-f]{2}/.exec(sample);
+    var sep = sepM ? sepM[1] : "";
+    var bytes = r.customHex.match(/../g);
+    // FDLController.setValue only takes text (what you'd type); E-Sys parses it with this same format
+    var text = null, tried = [bytes.join(sep), bytes.join(" "), bytes.join(""), bytes.join(", ")];
+    for (var t = 0; t < tried.length && text === null; t++) {
+      try { if (tvalueHex(fmt.parseObject(tried[t])) === r.customHex) text = tried[t]; } catch (eP) {}
+    }
+    if (text === null) throw "E-Sys did not accept the value for " + r.fname;
+    var path = new Sw.tree.TreePath(wrapNode.getPath());
+    tree.expandPath(path.getParentPath());
+    tree.setSelectionPath(path);
+    fdlController().setValue(wrapper, text);
+    if (tvalueHex(r.hit.fn.getInterpretation().getValues()) !== r.customHex) throw "E-Sys did not take the value for " + r.fname;
+    var parent = wrapNode.getParent();
+    for (var k = 0; k < parent.getChildCount(); k++) tree.getModel().nodeChanged(parent.getChildAt(k));
+    tree.getModel().nodeChanged(parent);
     tree.scrollPathToVisible(path);
   }
 
@@ -396,8 +476,9 @@
       if (!state.sel) { status.setText("Pick an entry first."); return; }
       var done = 0, skipped = [], errs = [];
       state.sel.results.forEach(function (r) {
-        if (r.status === "ok") {
-          try { applyStep(state.tree, r); done++; } catch (e) { errs.push(r.fname + ": " + e); }
+        if (r.status === "ok" || r.status === "custom") {
+          try { if (r.status === "ok") applyStep(state.tree, r); else applyCustom(state.tree, r); done++; }
+          catch (e) { errs.push(r.fname + ": " + e); }
         } else if (r.status !== "set") skipped.push((r.fname || r.step.addr + "/" + r.step.start) + " (" + STATUS[r.status].text + ")");
       });
       log("Cheat Sheet: applied '" + state.sel.code.desc + "' (" + state.sel.code.sheet + "): " + done + " value(s)" +
