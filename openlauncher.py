@@ -59,6 +59,7 @@ class OpenLauncher(tk.Tk):
         self.refresh_status()
         self.after(100, self._drain)
         self.after(800, lambda: self.check_updates(silent=True))
+        self.after(1200, lambda: self.check_launcher(silent=True))
 
     # ---------------------------------------------------------------- layout
     def _build(self):
@@ -112,15 +113,29 @@ class OpenLauncher(tk.Tk):
         ttk.Button(o, text="Logs", width=16, command=lambda: self.open_dir(config.paths().logs)).pack(pady=1)
         ttk.Button(o, text="Desktop shortcut", width=16, command=self.make_shortcut).pack(pady=1)
 
-        u = ttk.LabelFrame(self, text="Definition updates", padding=6)
+        u = ttk.LabelFrame(self, text="Updates", padding=6)
         u.pack(fill="x", padx=8, pady=(4, 0))
-        # one button, three states: "Check for updates" -> "Update now" | "Definitions up to date"
-        self.btn_update = ttk.Button(u, text="Check for updates", width=26, command=self.update_clicked)
+        # each button has three states: "Check for updates" -> "Update now" | "... up to date"
+        ur = ttk.Frame(u)
+        ur.pack(fill="x", pady=1)
+        self.btn_update = ttk.Button(ur, text="Check for updates", width=26, command=self.update_clicked)
         self.btn_update.pack(side="left")
         self.update_state = "check"
         self.update_label = tk.StringVar()
-        ttk.Label(u, textvariable=self.update_label).pack(side="left", padx=8)
+        ttk.Label(ur, textvariable=self.update_label).pack(side="left", padx=8)
         self.show_versions(None)
+        lr = ttk.Frame(u)
+        lr.pack(fill="x", pady=1)
+        self.btn_launcher = ttk.Button(lr, text="Check for launcher update", width=26, command=self.launcher_clicked)
+        self.btn_launcher.pack(side="left")
+        # git clones only: move to origin/main even with local edits/commits (they are saved first)
+        self.btn_force = ttk.Button(lr, text="Force update", width=14, command=self.force_launcher_update)
+        if updater.is_git_clone():
+            self.btn_force.pack(side="left", padx=(4, 0))
+        self.launcher_state = "check"
+        self.launcher_label = tk.StringVar()
+        ttk.Label(lr, textvariable=self.launcher_label).pack(side="left", padx=8)
+        self.set_launcher_state("check")
 
         lf = ttk.Frame(self, padding=(8, 4, 8, 8))
         lf.pack(fill="both", expand=True)
@@ -232,6 +247,133 @@ class OpenLauncher(tk.Tk):
                 self.q.put(lambda: self.set_update_state("check"))
             self.q.put(None)
         threading.Thread(target=work, daemon=True).start()
+
+    # ---------------------------------------------------------------- launcher updates
+    def set_launcher_state(self, state, available=None, git=None):
+        why = updater.launcher_blocker(self.cfg)
+        if why:
+            state = "blocked"
+        self.launcher_state = state
+        self.btn_launcher.configure(text={"check": "Check for launcher update", "available": "Update launcher",
+                                          "current": "Launcher up to date", "busy": "Working...",
+                                          "blocked": "Launcher updates off"}[state])
+        self.btn_launcher.state(["disabled"] if state in ("busy", "blocked") else ["!disabled"])
+        self.btn_force.state(["disabled"] if state in ("busy", "blocked") else ["!disabled"])
+        if updater.is_git_clone():
+            g = git or {}
+            text = "Installed launcher: git clone" + (f", {g['branch']} @ {g['head']}" if g else "")
+            if g:
+                text += f"     origin/main @ {g['latest']}" + (f" ({g['behind']} new commit(s))" if g["behind"] else "")
+                local = [f"{g['dirty']} edited file(s)"] * bool(g["dirty"]) + [f"{g['ahead']} local commit(s)"] * bool(g["ahead"])
+                if local:
+                    text += f"     local: {', '.join(local)}"
+        else:
+            cur = updater.launcher_installed()
+            text = (f"Installed launcher: {('v' + cur) if cur else 'source checkout'}"
+                    + (f"     Available: v{available}" if available else ""))
+        self.launcher_label.set(text + (f"     ({why})" if why else ""))
+
+    def launcher_clicked(self):
+        if self.launcher_state == "available":
+            self.do_launcher_update()
+        else:
+            self.check_launcher()
+
+    def check_launcher(self, silent=False):
+        if updater.launcher_blocker(self.cfg):
+            return
+        self.set_launcher_state("busy")
+
+        def work():
+            try:
+                if updater.is_git_clone():
+                    g = updater.git_state()
+                    avail = g["behind"] > 0
+                    self.q.put(lambda: self.set_launcher_state("available" if avail else "current", git=g))
+                    if not silent or avail:
+                        self.q.put(f"Launcher (git clone): {g['branch']} @ {g['head']}, origin/main @ {g['latest']}"
+                                   + (f" - {g['behind']} new commit(s) (Updates > Update launcher)" if avail else ""))
+                    return
+                cur, new, avail = updater.launcher_check()
+                self.q.put(lambda: self.set_launcher_state("available" if avail else "current", new))
+                if not silent or avail:
+                    self.q.put(f"Launcher: installed v{cur}, latest release v{new}"
+                               + (" - update available (Updates > Update launcher)" if avail else ""))
+            except (updater.UpdateError, OSError, subprocess.SubprocessError) as e:
+                self.q.put(lambda: self.set_launcher_state("check"))
+                if not silent:
+                    self.q.put(f"Launcher update check: {e}")
+        threading.Thread(target=work, daemon=True).start()
+
+    def _launcher_update_allowed(self, title):
+        if self.busy:
+            messagebox.showinfo(title, "Wait for the current task to finish first.")
+            return False
+        if esys_running():
+            messagebox.showwarning(title, "Close E-Sys first: it runs Open CAFD Map's files from this "
+                                          "install, and the update replaces them.")
+            return False
+        return True
+
+    def _git_update(self, force):
+        """Pull (or force-move) the clone in the background, then restart OpenLauncher on the new code."""
+        self.busy = True
+        self.set_launcher_state("busy")
+
+        def work():
+            try:
+                if updater.git_update(force, self.q.put):
+                    self.q.put("Restarting OpenLauncher on the updated code...")
+                    self.q.put(self.restart)
+                    return
+                self.q.put(lambda: self.set_launcher_state("current"))
+            except (updater.UpdateError, OSError, subprocess.SubprocessError) as e:
+                self.q.put(f"LAUNCHER UPDATE FAILED: {e}")
+                if not force:
+                    self.q.put("If the clone has local edits or commits, Force update saves them and updates anyway.")
+                self.q.put(lambda: self.set_launcher_state("check"))
+            self.q.put(None)
+        threading.Thread(target=work, daemon=True).start()
+
+    def restart(self):
+        subprocess.Popen([pythonw(), os.path.join(ROOT, "openlauncher.py")], cwd=ROOT)
+        self.after(200, self.destroy)
+
+    def force_launcher_update(self):
+        if not self._launcher_update_allowed("Force update"):
+            return
+        if not messagebox.askyesno(
+                "Force update", f"This moves the git clone in\n{ROOT}\nto origin/main, even if you changed files "
+                                "or made commits. Nothing is lost:\n\n"
+                                "  - uncommitted changes are saved to a git stash (git stash list)\n"
+                                "  - local commits are saved to a branch named openlauncher-backup-<time>\n\n"
+                                "Your workspace and config.json are not touched. Force update now?"):
+            return
+        self._git_update(force=True)
+
+    def do_launcher_update(self):
+        if not self._launcher_update_allowed("Update launcher"):
+            return
+        if updater.is_git_clone():
+            self._git_update(force=False)
+            return
+        changed = updater.local_changes()
+        note = (f"\n\nYou changed or added {len(changed)} file(s) in names/definitions/data (e.g. {changed[0]}); "
+                "setup replaces those folders, so they are backed up to workspace\\backups first." if changed else "")
+        if not messagebox.askyesno(
+                "Update launcher", f"OpenLauncher closes and the latest release is installed into\n{ROOT}\n"
+                                   "Your workspace and settings are kept. OpenLauncher starts again when it's done."
+                                   + note + "\n\nUpdate now?"):
+            return
+        try:
+            if changed:
+                bdir = updater.backup_local_changes(changed, "launcher-update")
+                self.write(f"Backed up {len(changed)} edited file(s) to {bdir}")
+            updater.launcher_update(self.cfg, self.write)
+        except (updater.UpdateError, OSError) as e:
+            messagebox.showerror("Update launcher", str(e))
+            return
+        self.after(300, self.destroy)
 
     # ---------------------------------------------------------------- actions
     def write(self, line):

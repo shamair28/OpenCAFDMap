@@ -78,7 +78,17 @@ New names and definition files are merged into the repo all the time; you don't 
   3. Re-applies names so E-Sys and the Backup Editor use them straight away.
 - **Definitions up to date.** Nothing to do; clicking checks again.
 
-Your workspace (DB, settings, `my_names.tsv`) is never touched. Code updates come with a new release (or `git pull`). A git clone is updated with `git pull --ff-only`. Command line: `python ocm\updater.py [--update]`.
+Your workspace (DB, settings, `my_names.tsv`) is never touched.
+
+**Launcher updates** (new OpenLauncher releases) are checked when OpenLauncher opens too. **Update launcher** downloads the latest release's `OpenLauncher-Setup.bat` and runs it for the folder OpenLauncher is installed in, even if that isn't the default folder. OpenLauncher closes, setup replaces the program files (keeping `workspace\` and `config.json`) and OpenLauncher starts again. Close E-Sys first. Any edits you made in `names\`, `definitions\` or `data\` are backed up to `workspace\backups\` first. If the release's definitions are older than the ones you had, OpenLauncher offers the newer definitions again right after.
+
+**Git clones** follow `origin/main` instead of releases:
+- **Update launcher** runs `git pull --ff-only`, then restarts OpenLauncher.
+- **Force update** also works when a plain pull can't run (local edits or commits). It first saves everything, then moves `main` to `origin/main`:
+  - uncommitted changes go to a git stash (`git stash list`);
+  - local commits get a branch named `openlauncher-backup-<time>`.
+
+  `workspace\` and `config.json` are git-ignored and never touched. A git clone is updated with `git pull --ff-only`. Command line: `python ocm\updater.py [--update]`.
 
 The definitions version (`definitions.json`, e.g. `2026.11.09.1`) is bumped automatically on GitHub after every merged contribution.
 
