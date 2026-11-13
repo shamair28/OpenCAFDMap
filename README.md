@@ -104,6 +104,19 @@ E-Sys started by OpenLauncher has an **OpenLauncher** section at the bottom of i
 - **Without a definition for that CAFD version**, the panel decrypts the CAFD with E-Sys's own PsdZ and builds the definition first (a few seconds, the same way as above).
 - **Read-only:** Compare NCD never writes an NCD. To change coding, use the FDL editor as usual.
 
+**Cheat Sheet.** E-Sys's own FDL Editor on the left, cheat sheets on the right.
+- **The editor is E-Sys's real FDL Editor module:** load, edit, save and code exactly as usual. An NCD you opened with Coding's **Edit NCD** stays open when you switch to Cheat Sheet.
+- **Sources:** the right pane lists every cheat sheet entry for the CAFD that's open: the community sheets in `definitions\community-cheatsheets\` and the sheets in your **Cheat sheets** folder.
+- **Each entry is checked against the open CAFD version:**
+  - ✓ **compatible**: the function is at that group, byte and mask, and the value is one of its values. Values given by name, like `aktiv`, are matched through the labels.
+  - ● **already set**: the open NCD already has that value.
+  - ◐ **partly compatible**: only some steps fit this version.
+  - ✎ **custom value**: a raw value that isn't in the function's list; set it by hand.
+  - ✗ **not for this version**: the function or value doesn't exist here.
+- **Filters:** compatible entries only or all, one sheet or all of them, and a search box. Selecting an entry shows its steps: group, BMW function name, byte and mask, current value, target value and the sheet's comment.
+- **Go to** selects the function in the FDL tree.
+- **Apply** picks the entry's values in the FDL editor through E-Sys's own edit path, exactly as if you chose them from the value list. Only the NCD open in the editor changes, and E-Sys marks it as modified. Saving and coding stay with you, as usual. Steps that are custom or don't fit are skipped and listed.
+
 ## BimmerCode Backup Editor
 OpenLauncher → **BimmerCode Backup Editor**. Pick a backup, find a parameter by name, stage values, and **Write new backup**. Your original backups are never modified. Every new backup is a byte copy with only the edited coding bytes changed, verified after writing. Read [docs/BC_EDITOR.md](docs/BC_EDITOR.md) before restoring one.
 
@@ -138,7 +151,7 @@ definitions\               contributed definition XMLs and cheat sheets   <- and
   community-cheatsheets\   public community cheat sheets (GPL-3.0, unchanged)
 definitions.json           definitions version + checksums (bumped by GitHub; used by the updater)
 data\                      FP criteria labels, SA option titles, ECU names, reference vehicles (contexts)
-esys\                      bootstrap.js + agent.js + tools.js (in E-Sys), decrypt.js (headless), test_agent.js
+esys\                      bootstrap.js + agent.js + tools.js + cheatsheet.js (in E-Sys), decrypt.js (headless), test_agent.js
 ocm\                       Python tools: build_defdb, export_defs, rules, defdb, bc_tool, bc_gui, ...
 docs\                      Backup Editor guide, examples
 assets\                    OpenLauncher icon (make_icon.py redraws it)

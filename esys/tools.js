@@ -42,6 +42,7 @@
     var old = cur.get(frame);
     Java.type("com.bmw.esys.gui.AbstractView").replace(old, view);
     cur.set(frame, view);
+    view.setVisible(true);   // E-Sys hides the view it switches away from (EsysFrame.setCurrentViewVisible)
     var w = Sw.SwingUtilities.getWindowAncestor(view);
     if (w) { w.validate(); w.repaint(); }
   }
@@ -80,6 +81,30 @@
     var grey = new Awt.Color(0x9a, 0x9a, 0x9a), red = new Awt.Color(0xd9, 0x30, 0x25), blue = new Awt.Color(0x2a, 0x78, 0xd6);
     page(2, 3, [grey, blue, grey, grey]);
     page(15, 9, [grey, red, grey, red]);
+    g.dispose();
+    return new Sw.ImageIcon(img);
+  }
+
+  function sheetIcon(size) {
+    var img = new Awt.image.BufferedImage(size, size, Awt.image.BufferedImage.TYPE_INT_ARGB);
+    var g = img.createGraphics();
+    g.setRenderingHint(Awt.RenderingHints.KEY_ANTIALIASING, Awt.RenderingHints.VALUE_ANTIALIAS_ON);
+    var s = size / 32;
+    g.setColor(Awt.Color.WHITE);
+    g.fillRoundRect(5 * s, 3 * s, 20 * s, 26 * s, 3 * s, 3 * s);
+    g.setColor(new Awt.Color(0x55, 0x55, 0x55));
+    g.setStroke(new Awt.BasicStroke(1.2 * s));
+    g.drawRoundRect(5 * s, 3 * s, 20 * s, 26 * s, 3 * s, 3 * s);
+    var green = new Awt.Color(0x0B, 0x7A, 0x3E), grey = new Awt.Color(0x9a, 0x9a, 0x9a);
+    for (var i = 0; i < 4; i++) {
+      var y = (9 + i * 5.5) * s;
+      g.setColor(green);
+      g.setStroke(new Awt.BasicStroke(1.8 * s));
+      g.drawLine(8 * s, y, 9.5 * s, y + 1.5 * s);
+      g.drawLine(9.5 * s, y + 1.5 * s, 12 * s, y - 1.5 * s);
+      g.setColor(grey);
+      g.drawLine(14 * s, y, 22 * s, y);
+    }
     g.dispose();
     return new Sw.ImageIcon(img);
   }
@@ -426,23 +451,52 @@
     try { return !!Java.type("com.bmw.esys.gui.control.Framework").isDarkMode; } catch (e) { return false; }
   }
 
-  function sectionPanel(bg) {
-    var p = new Sw.JPanel();
-    p.setLayout(new Sw.BoxLayout(p, Sw.BoxLayout.Y_AXIS));
-    p.setBackground(bg);
-    p.setOpaque(true);
-    var b = new Sw.JButton("Compare NCD", compareIcon(32));
+  var outlook = null;   // E-Sys's OutlookBarPanel, once found
+  function selectOurBar() {
+    try { outlook.setVisibleBar(field(outlook, cls("com.bmw.esys.gui.outlookbar.OutlookBarPanel"), "bars").get(outlook).size() - 1); }
+    catch (e) {}
+  }
+
+  // Cheat Sheet window (esys/cheatsheet.js): E-Sys's FDL Editor + cheat sheet pane.
+  var cheat = null;
+  try {
+    var CONTRIB = System.getProperty("ocm.contrib") ? String(System.getProperty("ocm.contrib")) : null;
+    cheat = load(new File(new File(String(System.getProperty("ocm.agent"))).getParentFile(), "cheatsheet.js").getPath())({
+      log: log, cls: cls, field: field, esysFrame: esysFrame, selectOurBar: selectOurBar,
+      communityDir: CONTRIB ? new File(CONTRIB, "community-cheatsheets").getPath() : null,
+      localDir: System.getProperty("ocm.cheatdir") ? String(System.getProperty("ocm.cheatdir")) : null
+    });
+  } catch (eC) {
+    log("Cheat Sheet window not loaded: " + eC);
+  }
+
+  function toolButton(text, icon, tip, action) {
+    var b = new Sw.JButton(text, icon);
     b.setVerticalTextPosition(Sw.SwingConstants.BOTTOM);
     b.setHorizontalTextPosition(Sw.SwingConstants.CENTER);
     b.setAlignmentX(Awt.Component.CENTER_ALIGNMENT);
     b.setContentAreaFilled(false);
     b.setBorderPainted(false);
     b.setFocusPainted(false);
-    b.setToolTipText("Compare two NCD files side by side (Open CAFD Map)");
+    b.setToolTipText(tip);
     b.setForeground(darkMode() ? new Awt.Color(0xE0, 0xE0, 0xE0) : Awt.Color.BLACK);
-    b.addActionListener(function () { openTool("compare", buildCompareView); });
+    b.addActionListener(action);
+    return b;
+  }
+
+  function sectionPanel(bg) {
+    var p = new Sw.JPanel();
+    p.setLayout(new Sw.BoxLayout(p, Sw.BoxLayout.Y_AXIS));
+    p.setBackground(bg);
+    p.setOpaque(true);
     p.add(Sw.Box.createVerticalStrut(6));
-    p.add(b);
+    p.add(toolButton("Compare NCD", compareIcon(32), "Compare two NCD files side by side (Open CAFD Map)",
+                     function () { openTool("compare", buildCompareView); }));
+    if (cheat) {
+      p.add(Sw.Box.createVerticalStrut(10));
+      p.add(toolButton("Cheat Sheet", sheetIcon(32), "FDL Editor with community cheat sheets, checked against the open CAFD",
+                       function () { try { cheat.open(); } catch (e) { log("Cheat Sheet failed: " + e); } }));
+    }
     p.add(Sw.Box.createVerticalGlue());
     return p;
   }
@@ -459,9 +513,10 @@
       if (!ob) continue;
       try {
         try { ob.removeBar(BAR_NAME); } catch (eR) {}        // hot reload: replace our earlier bar
+        outlook = ob;
         ob.addBar(BAR_NAME, sectionPanel(darkMode() ? new Awt.Color(0x3C, 0x3F, 0x41) : new Awt.Color(0xA0, 0xA0, 0xA3)));
         installed = true;
-        log("OpenLauncher section added to E-Sys (Compare NCD)");
+        log("OpenLauncher section added to E-Sys (Compare NCD" + (cheat ? ", Cheat Sheet" : "") + ")");
       } catch (e) {
         gaveUp = true;
         log("OpenLauncher section could not be added: " + e);
@@ -471,5 +526,10 @@
     if (++tries > 600) gaveUp = true;   // ~9 minutes without a main window: stop looking
   }
 
-  return { tick: install, compare: compare, writeDiff: writeDiff };
+  function tick() {
+    install();
+    if (cheat) cheat.tick();
+  }
+
+  return { tick: tick, compare: compare, writeDiff: writeDiff };
 });

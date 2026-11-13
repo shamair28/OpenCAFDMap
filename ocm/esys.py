@@ -110,6 +110,7 @@ def launch_command(cfg):
         f"-Docm.python={pythonw()}",
         f"-Docm.tools={os.path.dirname(os.path.abspath(__file__))}",
         f"-Docm.cafdir={os.path.join(config.esys_properties(cfg).get('Path.Home', ''), 'CAF')}",  # Compare NCD default
+        f"-Docm.cheatdir={cfg.get('cheat_sheets_dir') or ''}",  # your local cheat sheets (Cheat Sheet window)
         "-Dnashorn.args=--no-deprecation-warning",
     ]
     return [javaw] + esys_vm_options(cfg) + props + [
