@@ -92,6 +92,12 @@ def prepare(cfg=None, out=print):
     return pr.returncode
 
 
+def splash_image():
+    """OpenLauncher's animated splash (assets/openlauncher.gif); E-Sys's own splash.gif if it's missing."""
+    own = os.path.join(config.ROOT, "assets", "openlauncher.gif")
+    return own if os.path.exists(own) else "../splash.gif"
+
+
 def launch_command(cfg):
     d = check_esys(cfg)
     p = config.Paths(cfg)
@@ -114,7 +120,7 @@ def launch_command(cfg):
         "-Dnashorn.args=--no-deprecation-warning",
     ]
     return [javaw] + esys_vm_options(cfg) + props + [
-        "-cp", classpath(d), "-splash:../splash.gif",
+        "-cp", classpath(d), f"-splash:{splash_image()}",
         "jdk.nashorn.tools.Shell", os.path.join(config.ESYS_SCRIPTS, "bootstrap.js")]
 
 
