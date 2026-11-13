@@ -23,10 +23,16 @@ var apply = System.getProperties().get("ocm.applyCaf");
 var src = String(arguments[1]);
 var ins = new java.io.FileInputStream(src);
 if (/\.gz$/i.test(src)) ins = new java.util.zip.GZIPInputStream(ins);
-var Caf1 = Java.type("com.bmw.esys.domain.jaxb.caf1.Caf1");
-var ctx = javax.xml.bind.JAXBContext.newInstance(Java.to([Caf1.class], "java.lang.Class[]"));
-var obj = ctx.createUnmarshaller().unmarshal(new javax.xml.transform.stream.StreamSource(ins), Caf1.class).getValue();
+var obj;
+try {
+  var Caf1 = Java.type("com.bmw.esys.domain.jaxb.caf1.Caf1");                     // E-Sys 25.x
+  var ctx = javax.xml.bind.JAXBContext.newInstance(Java.to([Caf1.class], "java.lang.Class[]"));
+  obj = ctx.createUnmarshaller().unmarshal(new javax.xml.transform.stream.StreamSource(ins), Caf1.class).getValue();
+} catch (eNo25) {                                                                    // E-Sys 3.x (JAXB1 model)
+  obj = javax.xml.bind.JAXBContext.newInstance("com.bmw.esys.domain.base.caf").createUnmarshaller().unmarshal(ins);
+}
 ins.close();
+err.println("CAF class " + obj.getClass().getName());
 apply(obj);
 var exec = System.getProperties().get("ocm.runtimeExec");
 if (exec) {

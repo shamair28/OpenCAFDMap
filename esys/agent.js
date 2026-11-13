@@ -112,16 +112,35 @@
     }));
     System.getProperties().put("ocm.runtimeExec", runtimeExec);
   }
-  var jaxbCtx = null;
+  var jaxbCtx = null, legacyCtx = null;
+
+  // E-Sys 3.x (Java 8) keeps an open CAFD as com.bmw.esys.domain.base.caf.TCAF (JAXB1) instead of 25.x's
+  // jaxb.caf1.Caf1. Same getters and setters, so applyAndDumpCaf labels both; only finding the CAF in the tree
+  // and saving it for on-demand definitions differ. Nothing below changes how 25.x CAFs are handled.
+  var LEGACY_CAF = "com.bmw.esys.domain.base.caf.TCAF";
+  var legacyCafClass = null;
+  var legacyInterpClass = null;
+  try {
+    legacyCafClass = java.lang.Class.forName(LEGACY_CAF);
+    legacyInterpClass = java.lang.Class.forName("com.bmw.esys.domain.base.caf.TInterpretations");
+  } catch (eNoLegacy) {}
+  function isLegacyCaf(obj) { return legacyCafClass !== null && obj !== null && legacyCafClass.isInstance(obj); }
 
   function saveCafXml(caf, file) {
-    var cls = caf.getClass();
-    if (!jaxbCtx) jaxbCtx = javax.xml.bind.JAXBContext.newInstance(Java.to([cls], "java.lang.Class[]"));
-    var el = new javax.xml.bind.JAXBElement(new javax.xml.namespace.QName(CAF_NS, "caf"), cls, caf);
     file.getParentFile().mkdirs();
     var tmp = new File(file.getPath() + ".tmp");
     var os = new java.util.zip.GZIPOutputStream(new java.io.FileOutputStream(tmp));
-    try { jaxbCtx.createMarshaller().marshal(el, os); } finally { os.close(); }
+    try {
+      if (isLegacyCaf(caf)) {
+        // JAXB1 objects are their own root element and write the same psdz CAF XML runtime_defs.py reads
+        if (!legacyCtx) legacyCtx = javax.xml.bind.JAXBContext.newInstance("com.bmw.esys.domain.base.caf");
+        legacyCtx.createMarshaller().marshal(caf, os);
+      } else {
+        var cls = caf.getClass();
+        if (!jaxbCtx) jaxbCtx = javax.xml.bind.JAXBContext.newInstance(Java.to([cls], "java.lang.Class[]"));
+        jaxbCtx.createMarshaller().marshal(new javax.xml.bind.JAXBElement(new javax.xml.namespace.QName(CAF_NS, "caf"), cls, caf), os);
+      }
+    } finally { os.close(); }
     if (file.exists()) file["delete"]();
     if (!tmp.renameTo(file)) throw "could not write " + file;
   }
@@ -605,6 +624,10 @@
         if (node.getChildCount() > 0) {
           com.bmw.esys.gui.fdl.Fdl1TreeNode.setInterpretationSelectionList(node.getChildAt(0));
         }
+      } else if (uo && legacyInterpClass !== null && legacyInterpClass.isInstance(uo) && node.getChildCount() > 0) {
+        // E-Sys 3.x: the "Ausgelesen" (read) value's dropdown still lists the old value names after renaming,
+        // and E-Sys then can't draw or expand the node. Rebuild it the same way (3.x's FDLTreeNode).
+        com.bmw.esys.gui.coding.FDLTreeNode.setInterpretationSelectionList(node.getChildAt(0));
       }
     } catch (eSetList) {}
 
@@ -639,6 +662,13 @@
               }
             } else if (clsName === "com.bmw.esys.domain.jaxb.fp.TFzgProfil") {
               if (applyAndDumpFp(uo)) {
+                refreshTreeNodesRecursively(model, root);
+                comp.treeDidChange();
+                comp.revalidate();
+                comp.repaint();
+              }
+            } else if (isLegacyCaf(uo)) {             // E-Sys 3.x CAF / FDL view
+              if (applyAndDumpCaf(uo)) {
                 refreshTreeNodesRecursively(model, root);
                 comp.treeDidChange();
                 comp.revalidate();

@@ -309,9 +309,13 @@ class OpenLauncher(tk.Tk):
                            f"one without a definition yet is labelled within seconds. "
                            f"Logs: {config.Paths(cfg).logs} (esys.log, agent.log)")
                 self.q.put(lambda: self.btn_esys.state(["!disabled"]))
-                # E-Sys that dies while starting: say so here, with the reason from esys.log
+                # E-Sys that dies while starting: say so here, with the reason from esys.log. Exit code 0 is a
+                # normal close (the user closed E-Sys); a failed start exits non-zero (bootstrap.js uses 3).
                 for _ in range(90):
                     if pr.poll() is not None:
+                        if pr.returncode == 0:
+                            self.q.put("E-Sys closed.")
+                            break
                         self.q.put(f"E-Sys stopped during startup (exit {pr.returncode}). Last lines of esys.log:")
                         for line in esys.log_tail(cfg):
                             self.q.put("    " + line)
