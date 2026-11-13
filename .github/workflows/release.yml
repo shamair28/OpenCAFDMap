@@ -29,7 +29,8 @@ jobs:
           2. Pick the install folder (default: %LOCALAPPDATA%\\OpenCAFDMap). Setup checks for Python 3.10+
              (it can install it with winget), downloads **OpenCAFDMap.zip**, verifies its SHA-256 and
              creates Desktop / Start menu shortcuts.
-          3. In OpenLauncher: set your E-Sys folder, press **Build definitions**, then **Start E-Sys with Open CAFD Map**.
+          3. In OpenLauncher: set your E-Sys folder and press **Start E-Sys with Open CAFD Map**. No build is needed for E-Sys;
+             **Build definitions** is only required for the BimmerCode Backup Editor and the command-line tools.
 
           **Upgrading:** run setup again; your workspace and settings are kept.
           **Manual install:** extract OpenCAFDMap.zip anywhere and run OpenLauncher.bat.
