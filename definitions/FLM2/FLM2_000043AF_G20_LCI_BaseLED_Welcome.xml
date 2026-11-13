@@ -8,6 +8,8 @@
       code it instead of (not on top of) the welcome Lmm1 if you want both.
       Background, curve meanings and the visualizer: https://github.com/shamair28/AdvancedWelcomeLightVisualizer
       Check that your FLM2 runs this CAFD version and that your stock Lmm1 matches wert_67 before coding.
+      OpenLauncher: checking and applying these whole-record values in the Cheat Sheet window (inside E-Sys) needs
+      OpenLauncher 2.2.1 or newer. Older versions list them as not compatible.
    -->
    <cafd id="000043AF" name="FLM2" author="shamair28" series="G020">
       <code description="Welcome light 1/3 - heartbeat, mirrored inside-out (code in BOTH FLM2 Left 0x43 and Right 0x44) [tested]">
