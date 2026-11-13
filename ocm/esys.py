@@ -109,6 +109,7 @@ def launch_command(cfg):
         f"-Docm.runtime={os.path.join(p.workspace, 'runtime_cafd', cfg['series'])}",  # CAFDs labelled on demand
         f"-Docm.python={pythonw()}",
         f"-Docm.tools={os.path.dirname(os.path.abspath(__file__))}",
+        f"-Docm.cafdir={os.path.join(config.esys_properties(cfg).get('Path.Home', ''), 'CAF')}",  # Compare NCD default
         "-Dnashorn.args=--no-deprecation-warning",
     ]
     return [javaw] + esys_vm_options(cfg) + props + [

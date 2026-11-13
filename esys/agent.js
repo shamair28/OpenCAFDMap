@@ -659,8 +659,30 @@
     }
   }
 
+  // OpenLauncher section in E-Sys's navigation bar (esys/tools.js). Optional: any problem only disables the tools.
+  var tools = null;
+  try {
+    var toolsFile = new File(SCRIPT_FILE.getParentFile(), "tools.js");
+    if (toolsFile.exists()) {
+      tools = load(toolsFile.getPath())({
+        log: log, defDir: DEF_DIR, runtimeDir: RUNTIME_DIR, python: PYTHON, tools: TOOLS,
+        logDir: LOG_FILE.getParentFile(), loadXmlDef: loadXmlDef,
+        findDef: function (cid, ver) { var v = String(ver).split("_"); return findXmlDefFile(cid, v[0], v[1], v[2]); }
+      });
+      System.getProperties().put("ocm.toolsObj", tools);   // test hook (headless tests)
+    }
+  } catch (eTools) {
+    log("OpenLauncher tools not loaded: " + eTools);
+  }
+
   var tickFn = new java.lang.Runnable({
     run: function() {
+      try {
+        if (tools) tools.tick();
+      } catch (eT) {
+        log("Tools error: " + eT);
+        tools = null;
+      }
       try {
         var wins = Window.getWindows();
         for (var i = 0; i < wins.length; i++) {

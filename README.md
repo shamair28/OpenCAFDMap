@@ -90,8 +90,19 @@ Open CAFD Map **only runs inside an E-Sys it starts itself**: OpenLauncher's **S
 - Both scripts **refuse to run** unless OpenLauncher's `-Docm.launcher=1` switch is present.
 - The agent only **renames tree nodes in memory** (group, function and value names). It never changes coding data, NCDs or anything E-Sys sends to the car. If it fails to load, E-Sys starts normally without labels.
 - When you open a CAFD that has no definition file yet, the agent saves that CAFD as E-Sys loaded it to `workspace\runtime_cafd\` and runs [`ocm/runtime_defs.py`](ocm/runtime_defs.py) on it, the same labelling code as **Build definitions**. Everything stays on your machine. **Apply names** refreshes these definitions too.
+- The agent also adds an **OpenLauncher** section to E-Sys's left navigation bar ([`esys/tools.js`](esys/tools.js), below). It's only in E-Sys started by OpenLauncher.
 
 If you use a commercial launcher, keep using it as before. It runs its own E-Sys without Open CAFD Map; use OpenLauncher when you want the labels.
+
+## Tools inside E-Sys
+E-Sys started by OpenLauncher has an **OpenLauncher** section at the bottom of its left navigation bar.
+
+**Compare NCD.** Two NCD files side by side, with the same names and value labels as the FDL editor.
+- **NCD File 1** / **NCD File 2**: the file pickers open in E-Sys's CAF folder. **Compare** lines both files up function by function (group, byte, mask), so two versions of the same CAFD compare too.
+- **NCD 1 is on the left and NCD 2 on the right.** Every function whose value differs is red on the right, and both sides scroll together. **Differences only** hides the identical rows.
+- **Save diff** writes the differences as a tab-separated file (`NCD_diff_<cafd>_<v1>_vs_<v2>.tsv`). It opens in Excel or any editor: a `#` header with both files and CAFD versions, then one row per difference (`status`, `cafd_id`, `address`, `group`, `function`, `start`, `end`, `mask`, `hex1`, `value1`, `hex2`, `value2`).
+- **Without a definition for that CAFD version**, the panel decrypts the CAFD with E-Sys's own PsdZ and builds the definition first (a few seconds, the same way as above).
+- **Read-only:** Compare NCD never writes an NCD. To change coding, use the FDL editor as usual.
 
 ## BimmerCode Backup Editor
 OpenLauncher → **BimmerCode Backup Editor**. Pick a backup, find a parameter by name, stage values, and **Write new backup**. Your original backups are never modified. Every new backup is a byte copy with only the edited coding bytes changed, verified after writing. Read [docs/BC_EDITOR.md](docs/BC_EDITOR.md) before restoring one.
@@ -127,7 +138,7 @@ definitions\               contributed definition XMLs and cheat sheets   <- and
   community-cheatsheets\   public community cheat sheets (GPL-3.0, unchanged)
 definitions.json           definitions version + checksums (bumped by GitHub; used by the updater)
 data\                      FP criteria labels, SA option titles, ECU names, reference vehicles (contexts)
-esys\                      bootstrap.js + agent.js (in E-Sys), decrypt.js (headless), test_agent.js
+esys\                      bootstrap.js + agent.js + tools.js (in E-Sys), decrypt.js (headless), test_agent.js
 ocm\                       Python tools: build_defdb, export_defs, rules, defdb, bc_tool, bc_gui, ...
 docs\                      Backup Editor guide, examples
 assets\                    OpenLauncher icon (make_icon.py redraws it)
