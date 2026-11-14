@@ -458,20 +458,25 @@
   }
 
   // Cheat Sheet window (esys/cheatsheet.js): E-Sys's FDL Editor + cheat sheet pane.
-  // Apply edits through E-Sys's FDL Editor internals, so the Cheat Sheet window only runs on E-Sys versions it was
-  // tested on. Compare NCD is read-only and stays available everywhere the section can be added.
+  // Soft gate: on E-Sys versions it wasn't tested on, the window still runs (checking, Go to), but Apply - which edits
+  // through E-Sys's FDL Editor internals - is off unless "Try anyway" is set in OpenLauncher (-Docm.tryUntested=1).
   var ESYS_VER = String(System.getProperty("ocm.esysVersion") || "");
   var TESTED = String(System.getProperty("ocm.testedEsys") || "25.").split(",").some(function (p) {
     return p && ESYS_VER.indexOf(p) === 0;
   });
+  var TRY = String(System.getProperty("ocm.tryUntested")) === "1";
   var cheat = null;
-  if (!TESTED) log("Cheat Sheet window off: not tested on E-Sys " + (ESYS_VER || "(unknown version)"));
-  else try {
+  if (!TESTED) log("Cheat Sheet window on untested E-Sys " + (ESYS_VER || "(unknown version)") + ": Apply "
+                   + (TRY ? "enabled (Try anyway)" : "off (enable Try anyway in OpenLauncher)"));
+  try {
     var CONTRIB = System.getProperty("ocm.contrib") ? String(System.getProperty("ocm.contrib")) : null;
     cheat = load(new File(new File(String(System.getProperty("ocm.agent"))).getParentFile(), "cheatsheet.js").getPath())({
       log: log, cls: cls, field: field, esysFrame: esysFrame, selectOurBar: selectOurBar,
       contribDir: CONTRIB,   // every FDL cheat sheet under definitions\ (community-cheatsheets and contributed ones)
-      localDir: System.getProperty("ocm.cheatdir") ? String(System.getProperty("ocm.cheatdir")) : null
+      localDir: System.getProperty("ocm.cheatdir") ? String(System.getProperty("ocm.cheatdir")) : null,
+      applyEnabled: TESTED || TRY,
+      applyOffReason: "Apply is off on E-Sys " + (ESYS_VER || "(unknown version)") + ": OpenLauncher wasn't tested with " +
+                      "this version. Tick \"Try anyway\" in OpenLauncher and restart E-Sys to use it."
     });
   } catch (eC) {
     log("Cheat Sheet window not loaded: " + eC);

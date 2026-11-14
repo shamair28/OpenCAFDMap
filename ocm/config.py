@@ -19,6 +19,7 @@ DEFAULTS = {
     "series": "G020",            # main series to build (G020 = G20/G21/G22/G23/G26/G28/G8x)
     "workspace": "",             # where the DB, decrypted cache, definitions, logs go (default: <repo>\workspace)
     "context": "G20_LCI_US_330ixDrive_89FF.xml",  # data\contexts\ reference vehicle for shorter labels; "none"
+    "try_untested_esys": False,    # True: Cheat Sheet Apply also on E-Sys versions OpenLauncher wasn't tested with
     "export_all_versions": False,  # False: newest 3 versions per CAFD + versions found in your BimmerCode backups
     "cheat_sheets_dir": "",      # optional: folder of FDL cheat-sheet XMLs to import (kept local, never committed)
     "ista_db": "",               # optional: decrypted ISTA DiagDocDb sqlite (SA option titles in labels)

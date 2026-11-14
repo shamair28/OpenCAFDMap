@@ -30,7 +30,7 @@ CP_DIRS = ["3rd-party", "PsdZ", "UUID", "environment", "estcm", "", "fs", "odxch
            os.path.join("odxchecker", "odx201", "lib"), "xml"]
 NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 NASHORN_LAST = 14          # Java's JavaScript runner (Nashorn) was removed in Java 15
-TESTED_ESYS = ("25.",)     # E-Sys versions the in-E-Sys tools were tested on (others get read-only tools)
+TESTED_ESYS = ("25.",)     # E-Sys versions the in-E-Sys tools were tested on (others: Cheat Sheet Apply needs "Try anyway")
 
 
 def check_esys(cfg):
@@ -282,6 +282,7 @@ def launch_command(cfg, spec=None):
         f"-Docm.main={spec['main']}",                         # E-Sys's main class (from E-Sys.bat)
         f"-Docm.esysVersion={esys_version(d)}",
         f"-Docm.testedEsys={','.join(TESTED_ESYS)}",
+        f"-Docm.tryUntested={'1' if cfg.get('try_untested_esys') else '0'}",  # Cheat Sheet Apply on untested versions
     ] + nashorn_options(d)
     return [javaw] + spec["vm_options"] + props + [
         "-cp", ";".join(spec["classpath"]), f"-splash:{splash_image()}",

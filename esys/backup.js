@@ -23,16 +23,18 @@
     svt: cls("com.bmw.esys.domain.svt.SvtLogic"),
     fh: cls("com.bmw.esys.gui.DefaultFileHandlingController")
   };
-  // Tested on E-Sys 25.x (the same versions as the Cheat Sheet window); other versions keep E-Sys unchanged.
+  // Tested on E-Sys 25.x. Other versions are tried too (soft gate): it only reads E-Sys's documents and writes copies,
+  // and it switches itself off if the classes it needs aren't there.
   var ESYS_VER = String(System.getProperty("ocm.esysVersion") || "");
   var TESTED = String(System.getProperty("ocm.testedEsys") || "25.").split(",").some(function (p) {
     return p && ESYS_VER.indexOf(p) === 0;
   });
-  if (!DATA_DIR || !TESTED || !C.esys || !C.tree || !C.fal || !C.svt || !C.fh) {
+  if (!DATA_DIR || !C.esys || !C.tree || !C.fal || !C.svt || !C.fh) {
     log("FA/SVT backup off: " + (!DATA_DIR ? "E-Sys data folder (Path.Home) unknown"
-        : !TESTED ? "not tested on E-Sys " + (ESYS_VER || "(unknown version)") : "this E-Sys has no FA/SVT editors we know"));
+        : "this E-Sys " + (ESYS_VER || "") + " has no FA/SVT editors we know"));
     return { tick: function () {} };
   }
+  if (!TESTED) log("FA/SVT backup on untested E-Sys " + (ESYS_VER || "(unknown version)") + ": check FABak/SVTBak after a read");
 
   function getField(obj, clazz, name) {
     var c = clazz;

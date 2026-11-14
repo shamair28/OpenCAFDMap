@@ -403,6 +403,10 @@
     var bGo = new Sw.JButton("Go to"), bApply = new Sw.JButton("Apply"), status = new Sw.JLabel(" ");
     bGo.setToolTipText("Select this function in the FDL tree (the selected step, or the first one)");
     bApply.setToolTipText("Pick these values in the FDL editor (only the open NCD changes; save and code in E-Sys as usual)");
+    if (h.applyEnabled === false) {                 // untested E-Sys version without "Try anyway"
+      bApply.setEnabled(false);
+      bApply.setToolTipText(h.applyOffReason || "Apply is off on this E-Sys version");
+    }
     var actions = new Sw.JPanel(new Awt.FlowLayout(Awt.FlowLayout.RIGHT, 4, 0));
     actions.add(bGo); actions.add(bApply);
     var stepHead = new Sw.JPanel(new Awt.BorderLayout(4, 2));

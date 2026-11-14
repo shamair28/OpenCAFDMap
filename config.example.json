@@ -5,6 +5,7 @@
   "workspace": "",
   "context": "G20_LCI_US_330ixDrive_89FF.xml",
   "export_all_versions": false,
+  "try_untested_esys": false,
   "cheat_sheets_dir": "",
   "ista_db": "",
   "bimmercode_backups_dir": ""

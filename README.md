@@ -102,7 +102,9 @@ Open CAFD Map **only runs inside an E-Sys it starts itself**: OpenLauncher's **S
 - When you open a CAFD that has no definition file yet, the agent saves that CAFD as E-Sys loaded it to `workspace\runtime_cafd\` and runs [`ocm/runtime_defs.py`](ocm/runtime_defs.py) on it, the same labelling code as **Build definitions**. Everything stays on your machine. **Apply names** refreshes these definitions too.
 - The agent also adds an **OpenLauncher** section to E-Sys's left navigation bar ([`esys/tools.js`](esys/tools.js), below). It's only in E-Sys started by OpenLauncher.
 
-**E-Sys versions:** tested with E-Sys 25.10 (Java 11) and 3.35.3 (Java 8). E-Sys versions on Java 15 or newer can't be started this way (Java's JavaScript runner was removed) and OpenLauncher says so. Labels (including definitions built on demand) work on both: E-Sys 3.x keeps an open CAFD in its older CAF model, which the agent recognises separately, so 25.x is handled exactly as before. The OpenLauncher section (Compare NCD, Cheat Sheet) needs E-Sys 25.x's navigation bar, and the Cheat Sheet window is only enabled on tested versions (25.x).
+**E-Sys versions:** tested with E-Sys 25.10 (Java 11) and 3.35.3 (Java 8). E-Sys versions on Java 15 or newer can't be started this way (Java's JavaScript runner was removed) and OpenLauncher says so. Labels (including definitions built on demand) work on both: E-Sys 3.x keeps an open CAFD in its older CAF model, which the agent recognises separately, so 25.x is handled exactly as before. The OpenLauncher section (Compare NCD, Cheat Sheet) needs E-Sys 25.x's navigation bar.
+
+**Other E-Sys versions** (for example 22-24 or 26) are tried rather than blocked. Labels, Compare NCD, the Cheat Sheet window and the FA/SVT backup run wherever E-Sys has what they need, and switch themselves off (with a line in `agent.log`) where it doesn't. Only Cheat Sheet **Apply**, which edits through E-Sys's FDL Editor, is held back on versions OpenLauncher wasn't tested with: tick **Try anyway** in OpenLauncher to allow it there.
 
 **Logs** are in `workspace\logs\`: `esys.log` (E-Sys's own output for the latest start, previous one in `esys.prev.log`; attach it to bug reports), `agent.log` (labels and tools), `runtime_defs.log` and `decrypt.log`. If E-Sys fails while starting, it closes instead of leaving the splash screen up, and OpenLauncher shows the reason.
 
@@ -135,7 +137,7 @@ E-Sys started by OpenLauncher has an **OpenLauncher** section at the bottom of i
 - **FA:** `FA\FABak\<series>_<last 7 of VIN>.xml`; **SVT:** `SVT\SVTBak\<series>_<last 7 of VIN>.xml`. The files are E-Sys's own FA / SVT XML, so **Load** opens them like any other.
 - **Covered:** Vehicle Order **Read** and SVT Actual **Read (VCM)** / **Read (ECU)** in Coding, and the FA and SVT editors. Files you **Load** aren't copied, and neither is the calculated SVT target.
 - **Older backups are kept:** if the backup for that car already exists with different content, it's renamed to `<name>_<date-time>.xml` first. Reading an unchanged car again doesn't add a copy.
-- **Log:** every backup is written to `agent.log`. On E-Sys 25.x only; other versions are left unchanged.
+- **Log:** every backup is written to `agent.log`. Tested on E-Sys 25.x; on other versions it's tried too (see E-Sys versions above), so check the folders after your first read.
 
 ## BimmerCode Backup Editor
 OpenLauncher → **BimmerCode Backup Editor**. Pick a backup, find a parameter by name, stage values, and **Write new backup**. Your original backups are never modified. Every new backup is a byte copy with only the edited coding bytes changed, verified after writing. Read [docs/BC_EDITOR.md](docs/BC_EDITOR.md) before restoring one.

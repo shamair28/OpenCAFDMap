@@ -81,7 +81,11 @@ class OpenLauncher(tk.Tk):
         ttk.Checkbutton(pf, text="Export every CAFD version (bigger; otherwise newest 3 + the versions in your "
                                   "BimmerCode backups)", variable=self.all_versions).grid(row=len(FIELDS), column=1,
                                                                                           columnspan=3, sticky="w")
-        ttk.Button(pf, text="Save settings", command=self.save).grid(row=len(FIELDS) + 1, column=1, sticky="w", pady=4)
+        self.try_untested = tk.BooleanVar(value=bool(self.cfg.get("try_untested_esys")))
+        ttk.Checkbutton(pf, text="Try anyway: allow Cheat Sheet Apply on E-Sys versions OpenLauncher wasn't tested with "
+                                  "(tested: 25.x)", variable=self.try_untested).grid(row=len(FIELDS) + 1, column=1,
+                                                                                    columnspan=3, sticky="w")
+        ttk.Button(pf, text="Save settings", command=self.save).grid(row=len(FIELDS) + 2, column=1, sticky="w", pady=4)
         pf.columnconfigure(1, weight=1)
 
         self.status = tk.StringVar()
@@ -164,6 +168,7 @@ class OpenLauncher(tk.Tk):
         for key, *_ in FIELDS:
             self.cfg[key] = self.vars[key].get().strip()
         self.cfg["export_all_versions"] = self.all_versions.get()
+        self.cfg["try_untested_esys"] = self.try_untested.get()
         config.save(self.cfg)
         self.cfg = config.load()
         self.vars["workspace"].set(self.cfg["workspace"])
