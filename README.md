@@ -98,7 +98,7 @@ Open CAFD Map **only runs inside an E-Sys it starts itself**: OpenLauncher's **S
 - It starts a **new** E-Sys process from E-Sys's own JRE, classpath and VM options, read from your E-Sys version's own `E-Sys.bat` (only the classpath, working folder, `-X`/`-D` options and main class are taken; other additions such as `-javaagent` are left out). Java's built-in JavaScript runner is the entry point. [`esys/bootstrap.js`](esys/bootstrap.js) loads [`esys/agent.js`](esys/agent.js), then calls E-Sys's normal main class.
 - **Nothing is installed into E-Sys**: no edited `.bat`, jar, config file, `-javaagent` hook or environment variable. The E-Sys folder is only read. E-Sys started any other way (`E-Sys.exe`, `E-Sys.bat`, another launcher) never sees our code.
 - Both scripts **refuse to run** unless OpenLauncher's `-Docm.launcher=1` switch is present.
-- The agent only **renames tree nodes in memory** (group, function and value names). It never changes coding data, NCDs or anything E-Sys sends to the car. If it fails to load, E-Sys starts normally without labels.
+- The agent only **renames tree nodes in memory** (group, function and value names). It never changes coding data, NCDs or anything E-Sys sends to the car. The only files it writes in E-Sys's data folder are the FA / SVT backups (below). If it fails to load, E-Sys starts normally without labels.
 - When you open a CAFD that has no definition file yet, the agent saves that CAFD as E-Sys loaded it to `workspace\runtime_cafd\` and runs [`ocm/runtime_defs.py`](ocm/runtime_defs.py) on it, the same labelling code as **Build definitions**. Everything stays on your machine. **Apply names** refreshes these definitions too.
 - The agent also adds an **OpenLauncher** section to E-Sys's left navigation bar ([`esys/tools.js`](esys/tools.js), below). It's only in E-Sys started by OpenLauncher.
 
@@ -130,6 +130,12 @@ E-Sys started by OpenLauncher has an **OpenLauncher** section at the bottom of i
 - **Filters:** compatible entries only or all, one sheet or all of them, and a search box. Selecting an entry shows its steps: group, BMW function name, byte and mask, current value, target value and the sheet's comment.
 - **Go to** selects the function in the FDL tree.
 - **Apply** sets the entry's values in the FDL editor through E-Sys's own edit path. A preset value is picked from the value list; a custom value is entered in the raw value field (`Werte=`), and E-Sys's parsed result is checked byte for byte. Only the NCD open in the editor changes, and E-Sys marks it as modified. Saving and coding stay with you, as usual. Steps that don't fit are skipped and listed.
+
+**FA / SVT auto-backup.** Every FA and SVT that E-Sys reads from the vehicle is saved as a copy in E-Sys's data folder (`Path.Home`, for example `H:\Data`), with no button to press:
+- **FA:** `FA\FABak\<series>_<last 7 of VIN>.xml`; **SVT:** `SVT\SVTBak\<series>_<last 7 of VIN>.xml`. The files are E-Sys's own FA / SVT XML, so **Load** opens them like any other.
+- **Covered:** Vehicle Order **Read** and SVT Actual **Read (VCM)** / **Read (ECU)** in Coding, and the FA and SVT editors. Files you **Load** aren't copied, and neither is the calculated SVT target.
+- **Older backups are kept:** if the backup for that car already exists with different content, it's renamed to `<name>_<date-time>.xml` first. Reading an unchanged car again doesn't add a copy.
+- **Log:** every backup is written to `agent.log`. On E-Sys 25.x only; other versions are left unchanged.
 
 ## BimmerCode Backup Editor
 OpenLauncher → **BimmerCode Backup Editor**. Pick a backup, find a parameter by name, stage values, and **Write new backup**. Your original backups are never modified. Every new backup is a byte copy with only the edited coding bytes changed, verified after writing. Read [docs/BC_EDITOR.md](docs/BC_EDITOR.md) before restoring one.
@@ -165,7 +171,7 @@ definitions\               contributed definition XMLs and cheat sheets   <- and
   community-cheatsheets\   public community cheat sheets (GPL-3.0, unchanged)
 definitions.json           definitions version + checksums (bumped by GitHub; used by the updater)
 data\                      FP criteria labels, SA option titles, ECU names, reference vehicles (contexts)
-esys\                      bootstrap.js + agent.js + tools.js + cheatsheet.js (in E-Sys), decrypt.js (headless), test_agent.js
+esys\                      bootstrap.js + agent.js + tools.js + cheatsheet.js + backup.js (in E-Sys), decrypt.js (headless), test_agent.js
 ocm\                       Python tools: build_defdb, export_defs, rules, defdb, bc_tool, bc_gui, ...
 docs\                      Backup Editor guide, examples
 assets\                    OpenLauncher icon (make_icon.py redraws it)

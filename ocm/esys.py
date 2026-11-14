@@ -277,6 +277,7 @@ def launch_command(cfg, spec=None):
         f"-Docm.python={pythonw()}",
         f"-Docm.tools={os.path.dirname(os.path.abspath(__file__))}",
         f"-Docm.cafdir={os.path.join(config.esys_properties(cfg).get('Path.Home', ''), 'CAF')}",  # Compare NCD default
+        f"-Docm.datadir={config.esys_properties(cfg).get('Path.Home', '')}",  # FA/SVT backups (FA\FABak, SVT\SVTBak)
         f"-Docm.cheatdir={cfg.get('cheat_sheets_dir') or ''}",  # your local cheat sheets (Cheat Sheet window)
         f"-Docm.main={spec['main']}",                         # E-Sys's main class (from E-Sys.bat)
         f"-Docm.esysVersion={esys_version(d)}",

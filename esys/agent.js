@@ -705,6 +705,19 @@
     log("OpenLauncher tools not loaded: " + eTools);
   }
 
+  // FA / SVT read from the vehicle -> copy in E-Sys's data folder (esys/backup.js). Optional like the tools.
+  var backup = null;
+  try {
+    var backupFile = new File(SCRIPT_FILE.getParentFile(), "backup.js");
+    if (backupFile.exists()) {
+      backup = load(backupFile.getPath())({
+        log: log, dataDir: System.getProperty("ocm.datadir") ? String(System.getProperty("ocm.datadir")) : null
+      });
+    }
+  } catch (eBackup) {
+    log("FA/SVT backup not loaded: " + eBackup);
+  }
+
   var tickFn = new java.lang.Runnable({
     run: function() {
       try {
@@ -712,6 +725,12 @@
       } catch (eT) {
         log("Tools error: " + eT);
         tools = null;
+      }
+      try {
+        if (backup) backup.tick();
+      } catch (eB) {
+        log("FA/SVT backup error: " + eB);
+        backup = null;
       }
       try {
         var wins = Window.getWindows();
