@@ -101,16 +101,88 @@ def load_tsv_crits(path, source, crits):
             crits[cv] = dict(cat=cat, fa_codes="", selector="", label=label, short=short, source=source)
 
 
+# Type-key criteria (drive, body, dev series, engine, ...): named from the ISTA vehicle attribute whose values match
+# exactly the type keys that carry the criterion in this series' FA->FP mapping (same rule as fp_crits_typekey.tsv).
+TK_SHORT = {"Engine": "eng", "Engine 8-character": "eng8", "Transmission": "gearbox", "Development code": "",
+            "Country of assembly": "plant", "Product line": "PL", "Engine performance class": "power",
+            "Engine displacement": "disp", "Engine upgrade": "engRev", "Engine fuel type": "fuel",
+            "Hybrid identifier": "hyb", "Electrical range": "eRange", "National-market version": "mkt",
+            "Power train": "", "Body": "", "Steering": "", "Lebenszyklus": "", "Sales designation": "model",
+            "Model series": "series", "Series group": "group", "Doors": "doors", "Basic version": "base",
+            "Sportausführung": "sport", "Control type": "ctrl", "Grundtyp": "basetype"}
+TK_PREFER = ["Development code", "Body", "Steering", "Power train", "National-market version", "Lebenszyklus",
+             "Engine", "Engine 8-character", "Transmission", "Engine fuel type", "Hybrid identifier",
+             "Engine performance class", "Engine displacement", "Engine upgrade", "Country of assembly",
+             "Product line", "Electrical range", "Sportausführung", "Doors", "Model series", "Basic version",
+             "Grundtyp", "Control type", "Sales designation"]
+
+
+def ista_typekey_attrs(ista, codes):
+    """{type key: {ISTA attribute: value}} from ISTA's DiagDocDb (XEP_VEHICLES), for these type keys."""
+    out = {}
+    if not ista or not os.path.exists(ista) or not codes:
+        return out
+    con = sqlite3.connect(f"file:{ista}?mode=ro", uri=True)
+    try:
+        root = con.execute("SELECT ID FROM XEP_CHARACTERISTICROOTS WHERE TITLE_ENGB='Model code'").fetchone()
+        if not root:
+            return out
+        codes = sorted(codes)
+        for i in range(0, len(codes), 400):
+            part = codes[i:i + 400]
+            q = ("SELECT k.NAME, r.TITLE_ENGB, c.NAME FROM XEP_CHARACTERISTICS k "
+                 "JOIN XEP_VEHICLES v ON v.TYPEKEYID = k.ID JOIN XEP_CHARACTERISTICS c ON c.ID = v.CHARACTERISTICID "
+                 "JOIN XEP_CHARACTERISTICROOTS r ON r.ID = c.PARENTID "
+                 f"WHERE k.PARENTID = ? AND k.NAME IN ({','.join('?' * len(part))})")
+            for tk, attr, val in con.execute(q, (root[0], *part)):
+                out.setdefault(tk, {})[attr] = val
+    except sqlite3.Error:
+        return {}
+    finally:
+        con.close()
+    return out
+
+
+def name_typekey_crit(T, U, attrs):
+    """Label for the type keys T (of all type keys U in this mapping), or None if no attribute separates them."""
+    if T == U:
+        return None
+    best = None
+    for attr in TK_PREFER + sorted({k for tk in U for k in attrs.get(tk, {})} - set(TK_PREFER)):
+        inside = {attrs.get(tk, {}).get(attr) for tk in T}
+        if None in inside:
+            continue
+        outside = {attrs.get(tk, {}).get(attr) for tk in U - T}
+        if inside & outside:
+            continue
+        cand = (len(inside), TK_PREFER.index(attr) if attr in TK_PREFER else 99, attr, inside)
+        if best is None or cand < best:
+            best = cand
+    if not best or best[0] > 6:
+        return None
+    attr, vals = best[2], best[3]
+    if attr == "Engine" and vals == {"-"}:
+        return "BEV"
+    s = TK_SHORT.get(attr, attr)
+    v = "|".join(sorted(vals))
+    return f"{s}={v}" if s else v
+
+
 def load_crits(a):
-    """Priority: fafp (SA/HO/E-word/date) > E-Sys verified > type-key derived > curated."""
-    crits = {}
+    """Priority: fafp (SA/HO/E-word/date) > E-Sys verified > type keys named from ISTA (any series) > type-key table
+    > curated > generic type-key group labels."""
+    crits, generic, tk_named = {}, {}, {}
     if a.fafp and os.path.exists(a.fafp):
         s = open(a.fafp, encoding="utf-8").read()
-        rows = re.findall(r'<faElement code="([^"]*)" selector="([^"]*)"/><fpElement categoryVal="(\d+)" '
-                          r'criteriaVal="(\d+)"', s)
+        # One <fa2fpMapping> = one FA element and EVERY FP criterion it sets: a type key, for example, sets drive,
+        # body style, dev series (EBR) and more at once, so each mapping's fpElements are all read.
         by = defaultdict(list)
-        for code, sel, cat, cv in rows:
-            by[int(cv)].append((code, sel, int(cat)))
+        for block in re.findall(r"<fa2fpMapping>(.*?)</fa2fpMapping>", s, re.S):
+            fe = re.search(r'<faElement code="([^"]*)" selector="([^"]*)"', block)
+            if not fe:
+                continue
+            for cat, cv in re.findall(r'<fpElement categoryVal="(\d+)" criteriaVal="(\d+)"', block):
+                by[int(cv)].append((fe.group(1), fe.group(2), int(cat)))
         sa_titles = {}
         if a.ista and os.path.exists(a.ista):
             con = sqlite3.connect(f"file:{a.ista}?mode=ro", uri=True)
@@ -126,6 +198,10 @@ def load_crits(a):
                 f = line.rstrip("\r\n").split("\t")
                 if not line.startswith("#") and len(f) >= 2 and f[0] != "code":
                     sa_titles[f[0]] = f[1]
+        # all type keys of this series' mapping, with their ISTA attributes (if an ISTA database is set)
+        all_tk = {x[0] for lst in by.values() for x in lst if x[1] == "T" and x[2] < 128}
+        tk_attrs = ista_typekey_attrs(a.ista, all_tk)
+        tk_universe = {tk for tk in all_tk if tk in tk_attrs}
         for cv, lst in by.items():
             # Rules reference crits as //cat[@val<"128"]; cat>=128 entries (build dates, cat 255) reuse
             # the same numbers (2103 = date 03/21 AND engine B58 in cat 13), so they must not label them.
@@ -136,8 +212,16 @@ def load_crits(a):
             sels = sorted({x[1] for x in lst})
             codes = [x[0] for x in lst]
             if sels == ["T"]:
-                label = f"typekey group ({len(codes)} keys e.g. {','.join(sorted(codes)[:4])})"
-                short = f"TK#{cv}"
+                named = name_typekey_crit(set(codes) & tk_universe, tk_universe, tk_attrs) if tk_universe else None
+                if not named:            # generic label: only if the verified / type-key tables have nothing
+                    generic[cv] = dict(cat=cat, fa_codes=",".join(codes), selector="T",
+                                       label=f"typekey group ({len(codes)} keys e.g. {','.join(sorted(codes)[:4])})",
+                                       short=f"TK#{cv}", source="fafp")
+                    continue
+                # ISTA-derived name: after the hand-verified table (e.g. "LCI" beats ISTA's "LZI1")
+                tk_named[cv] = dict(cat=cat, fa_codes=",".join(codes), selector="T", label=named, short=named,
+                                    source="fafp+ista")
+                continue
             else:
                 parts, shorts = [], []
                 for code, sel, _ in lst:
@@ -156,6 +240,8 @@ def load_crits(a):
             crits[cv] = dict(cat=cat, fa_codes=",".join(codes), selector=",".join(sels), label=label,
                              short=short, source="fafp")
     load_tsv_crits(a.verified, "esys_verified", crits)
+    for cv, g in tk_named.items():
+        crits.setdefault(cv, g)
     load_tsv_crits(a.typekey, "esys_typekey", crits)
     load_tsv_crits(a.curated, "curated_unverified", crits)
     if a.fpdef and os.path.exists(a.fpdef):
@@ -169,6 +255,8 @@ def load_crits(a):
                     lab = cr.get("name")
                     crits[cv] = dict(cat=int(cat.get("val")), fa_codes="", selector="", label=lab,
                                      short=lab.split(" - ")[0].split(" ")[0] + "?", source="curated_unverified")
+    for cv, g in generic.items():          # type-key groups nothing above could name
+        crits.setdefault(cv, g)
     return crits
 
 

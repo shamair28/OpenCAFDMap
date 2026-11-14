@@ -511,9 +511,48 @@
     return true;
   }
 
-  function loadFpXmlDef(mainSeries) {
+  // FP_<main series>.xml: in the configured series' definitions folder, or in that main series' own folder
+  // (workspace\definitions\<series>, where an FP of another series is built on demand).
+  function fpXmlFile(mainSeries) {
     var f = new File(DEF_DIR, "FP_" + mainSeries + ".xml");
-    if (!f.exists()) return null;
+    if (f.exists()) return f;
+    var g = new File(new File(new File(DEF_DIR).getParentFile(), mainSeries), "FP_" + mainSeries + ".xml");
+    return g.exists() ? g : null;
+  }
+
+  // The FP (vehicle profile) of a car whose main series has no FP definition yet: build one in the background with
+  // ocm/runtime_defs.py --prepare --series <series> (FA->FP mapping from your psdzdata + criteria labels), using
+  // the E-Sys that's running. The next tick relabels the FP view when the file appears.
+  function requestFpDefinition(mainSeries) {
+    var tag = "FP_" + mainSeries;
+    if (!runtimeExec || !PYTHON || !TOOLS || runtimeState.containsKey(tag)) return;
+    runtimeState.put(tag, "pending");
+    log("Building the vehicle profile labels for main series " + mainSeries + " in the background");
+    runtimeExec.submit(new java.lang.Runnable({ run: function () {
+      var t0 = System.currentTimeMillis();
+      try {
+        var esysDir = new File(String(System.getProperty("java.home"))).getParentFile().getPath();   // <E-Sys>\jre -> <E-Sys>
+        var pb = new java.lang.ProcessBuilder(Java.to([PYTHON, "-u", new File(TOOLS, "runtime_defs.py").getPath(),
+                                                       "--prepare", "--series", mainSeries, "--esys-dir", esysDir],
+                                                      "java.lang.String[]"));
+        pb.redirectErrorStream(true);
+        pb.redirectOutput(java.lang.ProcessBuilder.Redirect.appendTo(new File(LOG_FILE.getParentFile(), "runtime_defs.log")));
+        pb.environment().put("PYTHONIOENCODING", "utf-8");
+        var rc = pb.start().waitFor();
+        runtimeState.put(tag, rc === 0 && fpXmlFile(mainSeries) ? "done" : "failed");
+        log((rc === 0 && fpXmlFile(mainSeries) ? "Built the vehicle profile labels for " : "Building the vehicle profile labels failed for ")
+            + mainSeries + " (" + ((System.currentTimeMillis() - t0) / 1000).toFixed(1) + "s"
+            + (rc === 0 ? "" : ", exit " + rc + ", see runtime_defs.log") + ")");
+      } catch (eRun) {
+        runtimeState.put(tag, "failed");
+        log("Building the vehicle profile labels failed for " + mainSeries + ": " + eRun);
+      }
+    }}));
+  }
+
+  function loadFpXmlDef(mainSeries) {
+    var f = fpXmlFile(mainSeries);
+    if (!f) return null;
 
     var dbf = DocumentBuilderFactory.newInstance();
     var db = dbf.newDocumentBuilder();
@@ -550,8 +589,9 @@
   function applyAndDumpFp(fp) {
     var hdr = fp.getHeader();
     var mainSeries = (hdr && hdr.getMainSeries()) ? String(hdr.getMainSeries()) : SERIES;
-    var fpXmlFile = new File(DEF_DIR, "FP_" + mainSeries + ".xml");
-    var stateKey = fpXmlFile.exists() ? String(fpXmlFile.lastModified()) : "none";
+    var fpFile = fpXmlFile(mainSeries);
+    var stateKey = fpFile ? String(fpFile.lastModified()) : "none";
+    if (!fpFile) requestFpDefinition(mainSeries);
 
     if (processedFps.containsKey(fp) && String(processedFps.get(fp)) === stateKey) {
       return false;

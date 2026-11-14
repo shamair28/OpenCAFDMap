@@ -11,6 +11,10 @@ CAFD_<id>_<ver>.xml to the workspace's definitions folder. The agent then relabe
     python ocm\runtime_defs.py --all                 rebuild every CAFD in runtime_cafd (after Apply names)
     python ocm\runtime_defs.py --prepare             FA->FP mapping (option-code labels) + FP_<series>.xml,
                                                      run by OpenLauncher before E-Sys starts
+    python ocm\runtime_defs.py --prepare --series F030 [--esys-dir <dir>]
+                                                     the same for another main series, into definitions\<series>:
+                                                     the agent runs it when E-Sys shows the FP (vehicle profile) of a
+                                                     car whose main series has no FP_<series>.xml yet
 """
 import argparse
 import os
@@ -87,12 +91,19 @@ def main():
     ap.add_argument("files", nargs="*")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--prepare", action="store_true")
+    ap.add_argument("--series", help="main series other than the configured one (with --prepare)")
+    ap.add_argument("--esys-dir", help="E-Sys to decrypt with (default: the configured one)")
     o = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    P = config.paths()
+    cfg = config.load()
+    if o.series:
+        cfg["series"] = o.series.upper()
+    if o.esys_dir:
+        cfg["esys_dir"] = o.esys_dir
+    P = config.Paths(cfg)
     rdir = runtime_dir(P)
     # the same inputs as build_defdb; cheat sheets are read directly (collect) instead of names_cheats.tsv
-    a = B.parse_args(["--cache", rdir, "--cheat-names", ""])
+    a = B.parse_args(["--cache", rdir, "--cheat-names", "", "--series", cfg["series"], "--fafp", P.fafp])
     t0 = time.time()
     if o.prepare:
         ensure_fafp(P)
