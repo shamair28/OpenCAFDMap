@@ -20,7 +20,7 @@ Everything above ships with the repo, so a fresh install sees every shared name.
   <img src="docs/images/coverage-light.svg" alt="BMW names by chassis. G-chassis 67% of CAFD ids: G029 Z4 98%, G042 2 Series Coupé 98%, G020 3/4 Series 96%, J029 Supra 94%, G015 8 Series 89%, G001 X3/X4 83%, G008 iX3 82%, G005 X5/X6 80%, G007 X7 77%, G011 7 Series 74%, G038 5 Series long 74%, G030 5/6 Series 74%, G060 5 Series 57%, G070 7 Series 43%, U006 2 Series Active Tourer 38%. F-chassis 52% of CAFD ids: F030 3/4 Series 100%, F020 1/2 Series 95%, F040 1 Series 81%, F015 X5/X6 69%, F025 X3/X4 66%, F045 2 Active/Gran Tourer 59%, F056 MINI 53%, F010 5/6 Series 50%, F001 7 Series 47%" width="760">
 </picture>
 
-OpenLauncher works with any main series: set it in OpenLauncher. For G020 and F030, 97% of all functions across every CAFD version carry BMW's own names. Untrimmed dumps of CAFDs your series doesn't share with those raise its bar the most ([CONTRIBUTING.md](CONTRIBUTING.md)).
+OpenLauncher works with any main series: set it in OpenLauncher. For G020 and F030, about 89% of functions across every CAFD version carry BMW's own verified names. OpenLauncher dynamically calculates the rest: functions are named from their group, byte and mask, and values are labelled with their coding rules. Untrimmed dumps of CAFDs your series doesn't share with those raise its bar the most ([CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ### Before / after
 The same FLM2 NCD (CAFD 00006DF0) in E-Sys's FDL-Editor, first in stock E-Sys, then in E-Sys started from OpenLauncher:

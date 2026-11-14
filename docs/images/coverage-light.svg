@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="760" height="872" viewBox="0 0 760 872" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="888" viewBox="0 0 760 888" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
 <title id="t">BMW names by chassis</title>
 <desc id="d">Share of CAFD ids that have BMW untrimmed names in OpenLauncher. G-chassis: 96 of 143 CAFD ids (G029 57 of 58, G042 53 of 54, G020 89 of 93, J029 48 of 51, G015 70 of 79, G001 78 of 94, G008 67 of 82, G005 78 of 98, G007 71 of 92, G011 80 of 108, G038 62 of 84, G030 73 of 99, G060 4 of 7, G070 3 of 7, U006 3 of 8); F-chassis: 131 of 254 CAFD ids (F030 94 of 94, F020 76 of 80, F040 44 of 54, F015 60 of 87, F025 57 of 87, F045 33 of 56, F056 34 of 64, F010 64 of 127, F001 61 of 130)</desc>
-<rect x="0.5" y="0.5" width="759" height="871" rx="10" fill="#fcfcfb" stroke="#e1e0d9"/>
+<rect x="0.5" y="0.5" width="759" height="887" rx="10" fill="#fcfcfb" stroke="#e1e0d9"/>
 <text x="24" y="34" font-size="17" font-weight="600" fill="#0b0b0b">BMW names by chassis</text>
 <text x="24" y="56" font-size="13" fill="#52514e">Share of CAFDs that come with BMW's own group, function and value names</text>
 <rect x="16" y="77" width="728" height="32" rx="6" fill="#f3f2ee"/>
@@ -120,6 +120,7 @@
 <text x="70" y="779.5" font-size="13" fill="#52514e">7 Series F01/F02</text>
 <path d="M275,768 H438.9230769230769 Q442.9230769230769,768 442.9230769230769,772 V778 Q442.9230769230769,782 438.9230769230769,782 H275 Z" fill="#2a78d6"><title>F001 7 Series F01/F02: 61 of 130 CAFD ids</title></path>
 <text x="450.9230769230769" y="779.5" font-size="12" font-weight="400" fill="#0b0b0b">47%<tspan font-weight="400" fill="#898781">  61 of 130</tspan></text>
-<text x="24" y="828" font-size="11.5" fill="#52514e">Across every CAFD version of G020 and F030, 97% of all functions carry BMW names. Family totals count each CAFD id once.</text>
-<text x="24" y="844" font-size="11.5" fill="#52514e">G60, G70 and U06 list only 7-8 CAFD ids in psdzdata; G045 and F070 (2-4 ids) are left out. Data: definitions 2026.11.13.5.</text>
+<text x="24" y="828" font-size="11.5" fill="#52514e">Across all G020 and F030 CAFD versions, about 89% of functions carry verified BMW names; OpenLauncher dynamically calculates the rest.</text>
+<text x="24" y="844" font-size="11.5" fill="#52514e">Family totals count each CAFD id once. G60, G70 and U06 list only 7-8 CAFD ids in psdzdata; G045 and F070 (2-4 ids) are left out.</text>
+<text x="24" y="860" font-size="11.5" fill="#898781">Data: definitions 2026.11.13.5.</text>
 </svg>

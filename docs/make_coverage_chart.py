@@ -83,7 +83,7 @@ def layout():
 def svg(t):
     c = THEMES[t]
     items, bottom = layout()
-    H = bottom + 78
+    H = bottom + 94
     desc = "; ".join(f"{fam}: {n} of {tot} CAFD ids (" + ", ".join(f"{s} {rn} of {rt}" for s, _, rn, rt in rows) + ")"
                      for fam, n, tot, rows in GROUPS)
     o = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" '
@@ -123,10 +123,11 @@ def svg(t):
         o.append(f'<text x="{BAR_X + w + 8}" y="{cy}" font-size="{size}" font-weight="{weight}" fill="{c["ink"]}">'
                  f'{pct}%<tspan font-weight="400" fill="{c["muted"]}">  {n} of {tot}</tspan></text>')
     fy = y1 + 38
-    o.append(f'<text x="{PAD}" y="{fy}" font-size="11.5" fill="{c["ink2"]}">Across every CAFD version of G020 and F030, '
-             f'97% of all functions carry BMW names. Family totals count each CAFD id once.</text>')
-    o.append(f'<text x="{PAD}" y="{fy + 16}" font-size="11.5" fill="{c["ink2"]}">G60, G70 and U06 list only 7-8 CAFD ids '
-             f'in psdzdata; G045 and F070 (2-4 ids) are left out. Data: {DATA}.</text>')
+    o.append(f'<text x="{PAD}" y="{fy}" font-size="11.5" fill="{c["ink2"]}">Across all G020 and F030 CAFD versions, '
+             f'about 89% of functions carry verified BMW names; OpenLauncher dynamically calculates the rest.</text>')
+    o.append(f'<text x="{PAD}" y="{fy + 16}" font-size="11.5" fill="{c["ink2"]}">Family totals count each CAFD id once. '
+             f'G60, G70 and U06 list only 7-8 CAFD ids in psdzdata; G045 and F070 (2-4 ids) are left out.</text>')
+    o.append(f'<text x="{PAD}" y="{fy + 32}" font-size="11.5" fill="{c["muted"]}">Data: {DATA}.</text>')
     o.append('</svg>')
     return "\n".join(o) + "\n"
 
