@@ -1,126 +1,156 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="760" height="888" viewBox="0 0 760 888" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
-<title id="t">BMW names by chassis</title>
-<desc id="d">Share of CAFD ids that have BMW untrimmed names in OpenLauncher. G-chassis: 96 of 143 CAFD ids (G029 57 of 58, G042 53 of 54, G020 89 of 93, J029 48 of 51, G015 70 of 79, G001 78 of 94, G008 67 of 82, G005 78 of 98, G007 71 of 92, G011 80 of 108, G038 62 of 84, G030 73 of 99, G060 4 of 7, G070 3 of 7, U006 3 of 8); F-chassis: 131 of 254 CAFD ids (F030 94 of 94, F020 76 of 80, F040 44 of 54, F015 60 of 87, F025 57 of 87, F045 33 of 56, F056 34 of 64, F010 64 of 127, F001 61 of 130)</desc>
-<rect x="0.5" y="0.5" width="759" height="887" rx="10" fill="#fcfcfb" stroke="#e1e0d9"/>
-<text x="24" y="34" font-size="17" font-weight="600" fill="#0b0b0b">BMW names by chassis</text>
-<text x="24" y="56" font-size="13" fill="#52514e">Share of CAFDs that come with BMW's own group, function and value names</text>
-<rect x="16" y="77" width="728" height="32" rx="6" fill="#f3f2ee"/>
-<rect x="16" y="519" width="728" height="32" rx="6" fill="#f3f2ee"/>
-<line x1="274.0" y1="74" x2="274.0" y2="790" stroke="#c3c2b7" stroke-width="1"/>
-<text x="274.0" y="806" font-size="11" fill="#898781" text-anchor="middle">0%</text>
-<line x1="364.0" y1="74" x2="364.0" y2="790" stroke="#e1e0d9" stroke-width="1"/>
-<text x="364.0" y="806" font-size="11" fill="#898781" text-anchor="middle">25%</text>
-<line x1="454.0" y1="74" x2="454.0" y2="790" stroke="#e1e0d9" stroke-width="1"/>
-<text x="454.0" y="806" font-size="11" fill="#898781" text-anchor="middle">50%</text>
-<line x1="544.0" y1="74" x2="544.0" y2="790" stroke="#e1e0d9" stroke-width="1"/>
-<text x="544.0" y="806" font-size="11" fill="#898781" text-anchor="middle">75%</text>
-<line x1="634.0" y1="74" x2="634.0" y2="790" stroke="#e1e0d9" stroke-width="1"/>
-<text x="634.0" y="806" font-size="11" fill="#898781" text-anchor="middle">100%</text>
-<text x="24" y="97.5" font-size="14.5" font-weight="700" fill="#0b0b0b">G-chassis</text>
-<text x="116" y="97.5" font-size="12.5" fill="#52514e">all CAFD ids</text>
-<path d="M275,84 H511.6783216783217 Q515.6783216783217,84 515.6783216783217,88 V98 Q515.6783216783217,102 511.6783216783217,102 H275 Z" fill="#1b4f8f"><title>G-chassis all CAFD ids: 96 of 143 CAFD ids</title></path>
-<text x="523.6783216783217" y="97.5" font-size="13.5" font-weight="700" fill="#0b0b0b">67%<tspan font-weight="400" fill="#898781">  96 of 143</tspan></text>
-<text x="24" y="129.5" font-size="13" font-weight="600" fill="#0b0b0b">G029</text>
-<text x="70" y="129.5" font-size="13" fill="#52514e">Z4</text>
-<path d="M275,118 H623.7931034482758 Q627.7931034482758,118 627.7931034482758,122 V128 Q627.7931034482758,132 623.7931034482758,132 H275 Z" fill="#2a78d6"><title>G029 Z4: 57 of 58 CAFD ids</title></path>
-<text x="635.7931034482758" y="129.5" font-size="12" font-weight="400" fill="#0b0b0b">98%<tspan font-weight="400" fill="#898781">  57 of 58</tspan></text>
-<text x="24" y="155.5" font-size="13" font-weight="600" fill="#0b0b0b">G042</text>
-<text x="70" y="155.5" font-size="13" fill="#52514e">2 Series Coupé, M2</text>
-<path d="M275,144 H623.3333333333333 Q627.3333333333333,144 627.3333333333333,148 V154 Q627.3333333333333,158 623.3333333333333,158 H275 Z" fill="#2a78d6"><title>G042 2 Series Coupé, M2: 53 of 54 CAFD ids</title></path>
-<text x="635.3333333333333" y="155.5" font-size="12" font-weight="400" fill="#0b0b0b">98%<tspan font-weight="400" fill="#898781">  53 of 54</tspan></text>
-<text x="24" y="181.5" font-size="13" font-weight="600" fill="#0b0b0b">G020</text>
-<text x="70" y="181.5" font-size="13" fill="#52514e">3/4 Series, i4, M3/M4</text>
-<path d="M275,170 H614.516129032258 Q618.516129032258,170 618.516129032258,174 V180 Q618.516129032258,184 614.516129032258,184 H275 Z" fill="#2a78d6"><title>G020 3/4 Series, i4, M3/M4: 89 of 93 CAFD ids</title></path>
-<text x="626.516129032258" y="181.5" font-size="12" font-weight="400" fill="#0b0b0b">96%<tspan font-weight="400" fill="#898781">  89 of 93</tspan></text>
-<text x="24" y="207.5" font-size="13" font-weight="600" fill="#0b0b0b">J029</text>
-<text x="70" y="207.5" font-size="13" fill="#52514e">Supra</text>
-<path d="M275,196 H608.8235294117646 Q612.8235294117646,196 612.8235294117646,200 V206 Q612.8235294117646,210 608.8235294117646,210 H275 Z" fill="#2a78d6"><title>J029 Supra: 48 of 51 CAFD ids</title></path>
-<text x="620.8235294117646" y="207.5" font-size="12" font-weight="400" fill="#0b0b0b">94%<tspan font-weight="400" fill="#898781">  48 of 51</tspan></text>
-<text x="24" y="233.5" font-size="13" font-weight="600" fill="#0b0b0b">G015</text>
-<text x="70" y="233.5" font-size="13" fill="#52514e">8 Series</text>
-<path d="M275,222 H588.9873417721519 Q592.9873417721519,222 592.9873417721519,226 V232 Q592.9873417721519,236 588.9873417721519,236 H275 Z" fill="#2a78d6"><title>G015 8 Series: 70 of 79 CAFD ids</title></path>
-<text x="600.9873417721519" y="233.5" font-size="12" font-weight="400" fill="#0b0b0b">89%<tspan font-weight="400" fill="#898781">  70 of 79</tspan></text>
-<text x="24" y="259.5" font-size="13" font-weight="600" fill="#0b0b0b">G001</text>
-<text x="70" y="259.5" font-size="13" fill="#52514e">X3, X4</text>
-<path d="M275,248 H568.7234042553191 Q572.7234042553191,248 572.7234042553191,252 V258 Q572.7234042553191,262 568.7234042553191,262 H275 Z" fill="#2a78d6"><title>G001 X3, X4: 78 of 94 CAFD ids</title></path>
-<text x="580.7234042553191" y="259.5" font-size="12" font-weight="400" fill="#0b0b0b">83%<tspan font-weight="400" fill="#898781">  78 of 94</tspan></text>
-<text x="24" y="285.5" font-size="13" font-weight="600" fill="#0b0b0b">G008</text>
-<text x="70" y="285.5" font-size="13" fill="#52514e">iX3</text>
-<path d="M275,274 H564.1463414634146 Q568.1463414634146,274 568.1463414634146,278 V284 Q568.1463414634146,288 564.1463414634146,288 H275 Z" fill="#2a78d6"><title>G008 iX3: 67 of 82 CAFD ids</title></path>
-<text x="576.1463414634146" y="285.5" font-size="12" font-weight="400" fill="#0b0b0b">82%<tspan font-weight="400" fill="#898781">  67 of 82</tspan></text>
-<text x="24" y="311.5" font-size="13" font-weight="600" fill="#0b0b0b">G005</text>
-<text x="70" y="311.5" font-size="13" fill="#52514e">X5, X6, X5 M</text>
-<path d="M275,300 H556.530612244898 Q560.530612244898,300 560.530612244898,304 V310 Q560.530612244898,314 556.530612244898,314 H275 Z" fill="#2a78d6"><title>G005 X5, X6, X5 M: 78 of 98 CAFD ids</title></path>
-<text x="568.530612244898" y="311.5" font-size="12" font-weight="400" fill="#0b0b0b">80%<tspan font-weight="400" fill="#898781">  78 of 98</tspan></text>
-<text x="24" y="337.5" font-size="13" font-weight="600" fill="#0b0b0b">G007</text>
-<text x="70" y="337.5" font-size="13" fill="#52514e">X7</text>
-<path d="M275,326 H547.8260869565217 Q551.8260869565217,326 551.8260869565217,330 V336 Q551.8260869565217,340 547.8260869565217,340 H275 Z" fill="#2a78d6"><title>G007 X7: 71 of 92 CAFD ids</title></path>
-<text x="559.8260869565217" y="337.5" font-size="12" font-weight="400" fill="#0b0b0b">77%<tspan font-weight="400" fill="#898781">  71 of 92</tspan></text>
-<text x="24" y="363.5" font-size="13" font-weight="600" fill="#0b0b0b">G011</text>
-<text x="70" y="363.5" font-size="13" fill="#52514e">7 Series (G11/G12)</text>
-<path d="M275,352 H536.6666666666667 Q540.6666666666667,352 540.6666666666667,356 V362 Q540.6666666666667,366 536.6666666666667,366 H275 Z" fill="#2a78d6"><title>G011 7 Series (G11/G12): 80 of 108 CAFD ids</title></path>
-<text x="548.6666666666667" y="363.5" font-size="12" font-weight="400" fill="#0b0b0b">74%<tspan font-weight="400" fill="#898781">  80 of 108</tspan></text>
-<text x="24" y="389.5" font-size="13" font-weight="600" fill="#0b0b0b">G038</text>
-<text x="70" y="389.5" font-size="13" fill="#52514e">5 Series long (China)</text>
-<path d="M275,378 H535.7142857142858 Q539.7142857142858,378 539.7142857142858,382 V388 Q539.7142857142858,392 535.7142857142858,392 H275 Z" fill="#2a78d6"><title>G038 5 Series long (China): 62 of 84 CAFD ids</title></path>
-<text x="547.7142857142858" y="389.5" font-size="12" font-weight="400" fill="#0b0b0b">74%<tspan font-weight="400" fill="#898781">  62 of 84</tspan></text>
-<text x="24" y="415.5" font-size="13" font-weight="600" fill="#0b0b0b">G030</text>
-<text x="70" y="415.5" font-size="13" fill="#52514e">5/6 Series, M5</text>
-<path d="M275,404 H535.4545454545455 Q539.4545454545455,404 539.4545454545455,408 V414 Q539.4545454545455,418 535.4545454545455,418 H275 Z" fill="#2a78d6"><title>G030 5/6 Series, M5: 73 of 99 CAFD ids</title></path>
-<text x="547.4545454545455" y="415.5" font-size="12" font-weight="400" fill="#0b0b0b">74%<tspan font-weight="400" fill="#898781">  73 of 99</tspan></text>
-<text x="24" y="441.5" font-size="13" font-weight="600" fill="#0b0b0b">G060</text>
-<text x="70" y="441.5" font-size="13" fill="#52514e">5 Series (G60)</text>
-<path d="M275,430 H475.7142857142857 Q479.7142857142857,430 479.7142857142857,434 V440 Q479.7142857142857,444 475.7142857142857,444 H275 Z" fill="#2a78d6"><title>G060 5 Series (G60): 4 of 7 CAFD ids</title></path>
-<text x="487.7142857142857" y="441.5" font-size="12" font-weight="400" fill="#0b0b0b">57%<tspan font-weight="400" fill="#898781">  4 of 7</tspan></text>
-<text x="24" y="467.5" font-size="13" font-weight="600" fill="#0b0b0b">G070</text>
-<text x="70" y="467.5" font-size="13" fill="#52514e">7 Series (G70)</text>
-<path d="M275,456 H424.2857142857143 Q428.2857142857143,456 428.2857142857143,460 V466 Q428.2857142857143,470 424.2857142857143,470 H275 Z" fill="#2a78d6"><title>G070 7 Series (G70): 3 of 7 CAFD ids</title></path>
-<text x="436.2857142857143" y="467.5" font-size="12" font-weight="400" fill="#0b0b0b">43%<tspan font-weight="400" fill="#898781">  3 of 7</tspan></text>
-<text x="24" y="493.5" font-size="13" font-weight="600" fill="#0b0b0b">U006</text>
-<text x="70" y="493.5" font-size="13" fill="#52514e">2 Series Active Tourer (U06)</text>
-<path d="M275,482 H405.0 Q409.0,482 409.0,486 V492 Q409.0,496 405.0,496 H275 Z" fill="#2a78d6"><title>U006 2 Series Active Tourer (U06): 3 of 8 CAFD ids</title></path>
-<text x="417.0" y="493.5" font-size="12" font-weight="400" fill="#0b0b0b">38%<tspan font-weight="400" fill="#898781">  3 of 8</tspan></text>
-<text x="24" y="539.5" font-size="14.5" font-weight="700" fill="#0b0b0b">F-chassis</text>
-<text x="116" y="539.5" font-size="12.5" fill="#52514e">all CAFD ids</text>
-<path d="M275,526 H455.66929133858264 Q459.66929133858264,526 459.66929133858264,530 V540 Q459.66929133858264,544 455.66929133858264,544 H275 Z" fill="#1b4f8f"><title>F-chassis all CAFD ids: 131 of 254 CAFD ids</title></path>
-<text x="467.66929133858264" y="539.5" font-size="13.5" font-weight="700" fill="#0b0b0b">52%<tspan font-weight="400" fill="#898781">  131 of 254</tspan></text>
-<text x="24" y="571.5" font-size="13" font-weight="600" fill="#0b0b0b">F030</text>
-<text x="70" y="571.5" font-size="13" fill="#52514e">3/4 Series F30-F36, M3/M4</text>
-<path d="M275,560 H630.0 Q634.0,560 634.0,564 V570 Q634.0,574 630.0,574 H275 Z" fill="#2a78d6"><title>F030 3/4 Series F30-F36, M3/M4: 94 of 94 CAFD ids</title></path>
-<text x="642.0" y="571.5" font-size="12" font-weight="400" fill="#0b0b0b">100%<tspan font-weight="400" fill="#898781">  94 of 94</tspan></text>
-<text x="24" y="597.5" font-size="13" font-weight="600" fill="#0b0b0b">F020</text>
-<text x="70" y="597.5" font-size="13" fill="#52514e">1/2 Series F20-F23, M2</text>
-<path d="M275,586 H612.0 Q616.0,586 616.0,590 V596 Q616.0,600 612.0,600 H275 Z" fill="#2a78d6"><title>F020 1/2 Series F20-F23, M2: 76 of 80 CAFD ids</title></path>
-<text x="624.0" y="597.5" font-size="12" font-weight="400" fill="#0b0b0b">95%<tspan font-weight="400" fill="#898781">  76 of 80</tspan></text>
-<text x="24" y="623.5" font-size="13" font-weight="600" fill="#0b0b0b">F040</text>
-<text x="70" y="623.5" font-size="13" fill="#52514e">1 Series F40, 2 Gran Coupé</text>
-<path d="M275,612 H563.3333333333333 Q567.3333333333333,612 567.3333333333333,616 V622 Q567.3333333333333,626 563.3333333333333,626 H275 Z" fill="#2a78d6"><title>F040 1 Series F40, 2 Gran Coupé: 44 of 54 CAFD ids</title></path>
-<text x="575.3333333333333" y="623.5" font-size="12" font-weight="400" fill="#0b0b0b">81%<tspan font-weight="400" fill="#898781">  44 of 54</tspan></text>
-<text x="24" y="649.5" font-size="13" font-weight="600" fill="#0b0b0b">F015</text>
-<text x="70" y="649.5" font-size="13" fill="#52514e">X5/X6 F15/F16, X5 M/X6 M</text>
-<path d="M275,638 H518.2758620689656 Q522.2758620689656,638 522.2758620689656,642 V648 Q522.2758620689656,652 518.2758620689656,652 H275 Z" fill="#2a78d6"><title>F015 X5/X6 F15/F16, X5 M/X6 M: 60 of 87 CAFD ids</title></path>
-<text x="530.2758620689656" y="649.5" font-size="12" font-weight="400" fill="#0b0b0b">69%<tspan font-weight="400" fill="#898781">  60 of 87</tspan></text>
-<text x="24" y="675.5" font-size="13" font-weight="600" fill="#0b0b0b">F025</text>
-<text x="70" y="675.5" font-size="13" fill="#52514e">X3/X4 F25/F26</text>
-<path d="M275,664 H505.8620689655172 Q509.8620689655172,664 509.8620689655172,668 V674 Q509.8620689655172,678 505.8620689655172,678 H275 Z" fill="#2a78d6"><title>F025 X3/X4 F25/F26: 57 of 87 CAFD ids</title></path>
-<text x="517.8620689655172" y="675.5" font-size="12" font-weight="400" fill="#0b0b0b">66%<tspan font-weight="400" fill="#898781">  57 of 87</tspan></text>
-<text x="24" y="701.5" font-size="13" font-weight="600" fill="#0b0b0b">F045</text>
-<text x="70" y="701.5" font-size="13" fill="#52514e">2 Active/Gran Tourer</text>
-<path d="M275,690 H482.1428571428571 Q486.1428571428571,690 486.1428571428571,694 V700 Q486.1428571428571,704 482.1428571428571,704 H275 Z" fill="#2a78d6"><title>F045 2 Active/Gran Tourer: 33 of 56 CAFD ids</title></path>
-<text x="494.1428571428571" y="701.5" font-size="12" font-weight="400" fill="#0b0b0b">59%<tspan font-weight="400" fill="#898781">  33 of 56</tspan></text>
-<text x="24" y="727.5" font-size="13" font-weight="600" fill="#0b0b0b">F056</text>
-<text x="70" y="727.5" font-size="13" fill="#52514e">MINI F54-F60</text>
-<path d="M275,716 H461.25 Q465.25,716 465.25,720 V726 Q465.25,730 461.25,730 H275 Z" fill="#2a78d6"><title>F056 MINI F54-F60: 34 of 64 CAFD ids</title></path>
-<text x="473.25" y="727.5" font-size="12" font-weight="400" fill="#0b0b0b">53%<tspan font-weight="400" fill="#898781">  34 of 64</tspan></text>
-<text x="24" y="753.5" font-size="13" font-weight="600" fill="#0b0b0b">F010</text>
-<text x="70" y="753.5" font-size="13" fill="#52514e">5/6 Series F10-F13, M5/M6</text>
-<path d="M275,742 H451.4173228346457 Q455.4173228346457,742 455.4173228346457,746 V752 Q455.4173228346457,756 451.4173228346457,756 H275 Z" fill="#2a78d6"><title>F010 5/6 Series F10-F13, M5/M6: 64 of 127 CAFD ids</title></path>
-<text x="463.4173228346457" y="753.5" font-size="12" font-weight="400" fill="#0b0b0b">50%<tspan font-weight="400" fill="#898781">  64 of 127</tspan></text>
-<text x="24" y="779.5" font-size="13" font-weight="600" fill="#0b0b0b">F001</text>
-<text x="70" y="779.5" font-size="13" fill="#52514e">7 Series F01/F02</text>
-<path d="M275,768 H438.9230769230769 Q442.9230769230769,768 442.9230769230769,772 V778 Q442.9230769230769,782 438.9230769230769,782 H275 Z" fill="#2a78d6"><title>F001 7 Series F01/F02: 61 of 130 CAFD ids</title></path>
-<text x="450.9230769230769" y="779.5" font-size="12" font-weight="400" fill="#0b0b0b">47%<tspan font-weight="400" fill="#898781">  61 of 130</tspan></text>
-<text x="24" y="828" font-size="11.5" fill="#52514e">Across all G020 and F030 CAFD versions, about 89% of functions carry verified BMW names; OpenLauncher dynamically calculates the rest.</text>
-<text x="24" y="844" font-size="11.5" fill="#52514e">Family totals count each CAFD id once. G60, G70 and U06 list only 7-8 CAFD ids in psdzdata; G045 and F070 (2-4 ids) are left out.</text>
-<text x="24" y="860" font-size="11.5" fill="#898781">Data: definitions 2026.11.13.5.</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="908" viewBox="0 0 760 908" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+<title id="t">Coding names by chassis</title>
+<desc id="d">Every CAFD is named in OpenLauncher: share of CAFD ids with verified BMW names, the rest dynamically calculated. G-chassis: 96 of 143 CAFD ids verified, the rest dynamically calculated (G029 57 of 58, G042 53 of 54, G020 89 of 93, J029 48 of 51, G015 70 of 79, G001 78 of 94, G008 67 of 82, G005 78 of 98, G007 71 of 92, G011 80 of 108, G038 62 of 84, G030 73 of 99, G060 4 of 7, G070 3 of 7, U006 3 of 8); F-chassis: 131 of 254 CAFD ids verified, the rest dynamically calculated (F030 94 of 94, F020 76 of 80, F040 44 of 54, F015 60 of 87, F025 57 of 87, F045 33 of 56, F056 34 of 64, F010 64 of 127, F001 61 of 130)</desc>
+<rect x="0.5" y="0.5" width="759" height="907" rx="10" fill="#fcfcfb" stroke="#e1e0d9"/>
+<text x="24" y="34" font-size="17" font-weight="600" fill="#0b0b0b">Coding names by chassis</text>
+<text x="24" y="56" font-size="13" fill="#52514e">Every CAFD is named: BMW's own verified names where they exist, dynamically calculated names for the rest</text>
+<rect x="24" y="72" width="12" height="12" rx="2" fill="#2a78d6"/>
+<text x="42" y="82.5" font-size="12" fill="#52514e">Verified BMW names</text>
+<rect x="184" y="72" width="12" height="12" rx="2" fill="#cfe0f5"/>
+<text x="202" y="82.5" font-size="12" fill="#52514e">Dynamically calculated by OpenLauncher</text>
+<rect x="16" y="97" width="728" height="32" rx="6" fill="#f3f2ee"/>
+<rect x="16" y="539" width="728" height="32" rx="6" fill="#f3f2ee"/>
+<line x1="274.0" y1="94" x2="274.0" y2="810" stroke="#c3c2b7" stroke-width="1"/>
+<text x="274.0" y="826" font-size="11" fill="#898781" text-anchor="middle">0%</text>
+<line x1="356.5" y1="94" x2="356.5" y2="810" stroke="#e1e0d9" stroke-width="1"/>
+<text x="356.5" y="826" font-size="11" fill="#898781" text-anchor="middle">25%</text>
+<line x1="439.0" y1="94" x2="439.0" y2="810" stroke="#e1e0d9" stroke-width="1"/>
+<text x="439.0" y="826" font-size="11" fill="#898781" text-anchor="middle">50%</text>
+<line x1="521.5" y1="94" x2="521.5" y2="810" stroke="#e1e0d9" stroke-width="1"/>
+<text x="521.5" y="826" font-size="11" fill="#898781" text-anchor="middle">75%</text>
+<line x1="604.0" y1="94" x2="604.0" y2="810" stroke="#e1e0d9" stroke-width="1"/>
+<text x="604.0" y="826" font-size="11" fill="#898781" text-anchor="middle">100%</text>
+<text x="24" y="117.5" font-size="14.5" font-weight="700" fill="#0b0b0b">G-chassis</text>
+<text x="116" y="117.5" font-size="12.5" fill="#52514e">all CAFD ids</text>
+<path d="M275,104 H600 Q604,104 604,108 V118 Q604,122 600,122 H275 Z" fill="#bfd2ec"><title>G-chassis all CAFD ids: 47 of 143 CAFD ids dynamically calculated</title></path>
+<path d="M275,104 H495.53846153846155 V122 H275 Z" fill="#1b4f8f"><title>G-chassis all CAFD ids: 96 of 143 CAFD ids with verified BMW names</title></path>
+<text x="614" y="117.5" font-size="13.5" font-weight="700" fill="#0b0b0b">67%<tspan font-weight="400" fill="#898781">  96 of 143</tspan></text>
+<text x="24" y="149.5" font-size="13" font-weight="600" fill="#0b0b0b">G029</text>
+<text x="70" y="149.5" font-size="13" fill="#52514e">Z4</text>
+<path d="M275,138 H600 Q604,138 604,142 V148 Q604,152 600,152 H275 Z" fill="#cfe0f5"><title>G029 Z4: 1 of 58 CAFD ids dynamically calculated</title></path>
+<path d="M275,138 H598.3103448275863 V152 H275 Z" fill="#2a78d6"><title>G029 Z4: 57 of 58 CAFD ids with verified BMW names</title></path>
+<text x="614" y="149.5" font-size="12" font-weight="400" fill="#0b0b0b">98%<tspan font-weight="400" fill="#898781">  57 of 58</tspan></text>
+<text x="24" y="175.5" font-size="13" font-weight="600" fill="#0b0b0b">G042</text>
+<text x="70" y="175.5" font-size="13" fill="#52514e">2 Series Coupé, M2</text>
+<path d="M275,164 H600 Q604,164 604,168 V174 Q604,178 600,178 H275 Z" fill="#cfe0f5"><title>G042 2 Series Coupé, M2: 1 of 54 CAFD ids dynamically calculated</title></path>
+<path d="M275,164 H597.8888888888889 V178 H275 Z" fill="#2a78d6"><title>G042 2 Series Coupé, M2: 53 of 54 CAFD ids with verified BMW names</title></path>
+<text x="614" y="175.5" font-size="12" font-weight="400" fill="#0b0b0b">98%<tspan font-weight="400" fill="#898781">  53 of 54</tspan></text>
+<text x="24" y="201.5" font-size="13" font-weight="600" fill="#0b0b0b">G020</text>
+<text x="70" y="201.5" font-size="13" fill="#52514e">3/4 Series, i4, M3/M4</text>
+<path d="M275,190 H600 Q604,190 604,194 V200 Q604,204 600,204 H275 Z" fill="#cfe0f5"><title>G020 3/4 Series, i4, M3/M4: 4 of 93 CAFD ids dynamically calculated</title></path>
+<path d="M275,190 H589.8064516129032 V204 H275 Z" fill="#2a78d6"><title>G020 3/4 Series, i4, M3/M4: 89 of 93 CAFD ids with verified BMW names</title></path>
+<text x="614" y="201.5" font-size="12" font-weight="400" fill="#0b0b0b">96%<tspan font-weight="400" fill="#898781">  89 of 93</tspan></text>
+<text x="24" y="227.5" font-size="13" font-weight="600" fill="#0b0b0b">J029</text>
+<text x="70" y="227.5" font-size="13" fill="#52514e">Supra</text>
+<path d="M275,216 H600 Q604,216 604,220 V226 Q604,230 600,230 H275 Z" fill="#cfe0f5"><title>J029 Supra: 3 of 51 CAFD ids dynamically calculated</title></path>
+<path d="M275,216 H584.5882352941176 V230 H275 Z" fill="#2a78d6"><title>J029 Supra: 48 of 51 CAFD ids with verified BMW names</title></path>
+<text x="614" y="227.5" font-size="12" font-weight="400" fill="#0b0b0b">94%<tspan font-weight="400" fill="#898781">  48 of 51</tspan></text>
+<text x="24" y="253.5" font-size="13" font-weight="600" fill="#0b0b0b">G015</text>
+<text x="70" y="253.5" font-size="13" fill="#52514e">8 Series</text>
+<path d="M275,242 H600 Q604,242 604,246 V252 Q604,256 600,256 H275 Z" fill="#cfe0f5"><title>G015 8 Series: 9 of 79 CAFD ids dynamically calculated</title></path>
+<path d="M275,242 H566.4050632911392 V256 H275 Z" fill="#2a78d6"><title>G015 8 Series: 70 of 79 CAFD ids with verified BMW names</title></path>
+<text x="614" y="253.5" font-size="12" font-weight="400" fill="#0b0b0b">89%<tspan font-weight="400" fill="#898781">  70 of 79</tspan></text>
+<text x="24" y="279.5" font-size="13" font-weight="600" fill="#0b0b0b">G001</text>
+<text x="70" y="279.5" font-size="13" fill="#52514e">X3, X4</text>
+<path d="M275,268 H600 Q604,268 604,272 V278 Q604,282 600,282 H275 Z" fill="#cfe0f5"><title>G001 X3, X4: 16 of 94 CAFD ids dynamically calculated</title></path>
+<path d="M275,268 H547.8297872340426 V282 H275 Z" fill="#2a78d6"><title>G001 X3, X4: 78 of 94 CAFD ids with verified BMW names</title></path>
+<text x="614" y="279.5" font-size="12" font-weight="400" fill="#0b0b0b">83%<tspan font-weight="400" fill="#898781">  78 of 94</tspan></text>
+<text x="24" y="305.5" font-size="13" font-weight="600" fill="#0b0b0b">G008</text>
+<text x="70" y="305.5" font-size="13" fill="#52514e">iX3</text>
+<path d="M275,294 H600 Q604,294 604,298 V304 Q604,308 600,308 H275 Z" fill="#cfe0f5"><title>G008 iX3: 15 of 82 CAFD ids dynamically calculated</title></path>
+<path d="M275,294 H543.6341463414634 V308 H275 Z" fill="#2a78d6"><title>G008 iX3: 67 of 82 CAFD ids with verified BMW names</title></path>
+<text x="614" y="305.5" font-size="12" font-weight="400" fill="#0b0b0b">82%<tspan font-weight="400" fill="#898781">  67 of 82</tspan></text>
+<text x="24" y="331.5" font-size="13" font-weight="600" fill="#0b0b0b">G005</text>
+<text x="70" y="331.5" font-size="13" fill="#52514e">X5, X6, X5 M</text>
+<path d="M275,320 H600 Q604,320 604,324 V330 Q604,334 600,334 H275 Z" fill="#cfe0f5"><title>G005 X5, X6, X5 M: 20 of 98 CAFD ids dynamically calculated</title></path>
+<path d="M275,320 H536.6530612244899 V334 H275 Z" fill="#2a78d6"><title>G005 X5, X6, X5 M: 78 of 98 CAFD ids with verified BMW names</title></path>
+<text x="614" y="331.5" font-size="12" font-weight="400" fill="#0b0b0b">80%<tspan font-weight="400" fill="#898781">  78 of 98</tspan></text>
+<text x="24" y="357.5" font-size="13" font-weight="600" fill="#0b0b0b">G007</text>
+<text x="70" y="357.5" font-size="13" fill="#52514e">X7</text>
+<path d="M275,346 H600 Q604,346 604,350 V356 Q604,360 600,360 H275 Z" fill="#cfe0f5"><title>G007 X7: 21 of 92 CAFD ids dynamically calculated</title></path>
+<path d="M275,346 H528.6739130434783 V360 H275 Z" fill="#2a78d6"><title>G007 X7: 71 of 92 CAFD ids with verified BMW names</title></path>
+<text x="614" y="357.5" font-size="12" font-weight="400" fill="#0b0b0b">77%<tspan font-weight="400" fill="#898781">  71 of 92</tspan></text>
+<text x="24" y="383.5" font-size="13" font-weight="600" fill="#0b0b0b">G011</text>
+<text x="70" y="383.5" font-size="13" fill="#52514e">7 Series (G11/G12)</text>
+<path d="M275,372 H600 Q604,372 604,376 V382 Q604,386 600,386 H275 Z" fill="#cfe0f5"><title>G011 7 Series (G11/G12): 28 of 108 CAFD ids dynamically calculated</title></path>
+<path d="M275,372 H518.4444444444445 V386 H275 Z" fill="#2a78d6"><title>G011 7 Series (G11/G12): 80 of 108 CAFD ids with verified BMW names</title></path>
+<text x="614" y="383.5" font-size="12" font-weight="400" fill="#0b0b0b">74%<tspan font-weight="400" fill="#898781">  80 of 108</tspan></text>
+<text x="24" y="409.5" font-size="13" font-weight="600" fill="#0b0b0b">G038</text>
+<text x="70" y="409.5" font-size="13" fill="#52514e">5 Series long (China)</text>
+<path d="M275,398 H600 Q604,398 604,402 V408 Q604,412 600,412 H275 Z" fill="#cfe0f5"><title>G038 5 Series long (China): 22 of 84 CAFD ids dynamically calculated</title></path>
+<path d="M275,398 H517.5714285714286 V412 H275 Z" fill="#2a78d6"><title>G038 5 Series long (China): 62 of 84 CAFD ids with verified BMW names</title></path>
+<text x="614" y="409.5" font-size="12" font-weight="400" fill="#0b0b0b">74%<tspan font-weight="400" fill="#898781">  62 of 84</tspan></text>
+<text x="24" y="435.5" font-size="13" font-weight="600" fill="#0b0b0b">G030</text>
+<text x="70" y="435.5" font-size="13" fill="#52514e">5/6 Series, M5</text>
+<path d="M275,424 H600 Q604,424 604,428 V434 Q604,438 600,438 H275 Z" fill="#cfe0f5"><title>G030 5/6 Series, M5: 26 of 99 CAFD ids dynamically calculated</title></path>
+<path d="M275,424 H517.3333333333334 V438 H275 Z" fill="#2a78d6"><title>G030 5/6 Series, M5: 73 of 99 CAFD ids with verified BMW names</title></path>
+<text x="614" y="435.5" font-size="12" font-weight="400" fill="#0b0b0b">74%<tspan font-weight="400" fill="#898781">  73 of 99</tspan></text>
+<text x="24" y="461.5" font-size="13" font-weight="600" fill="#0b0b0b">G060</text>
+<text x="70" y="461.5" font-size="13" fill="#52514e">5 Series (G60)</text>
+<path d="M275,450 H600 Q604,450 604,454 V460 Q604,464 600,464 H275 Z" fill="#cfe0f5"><title>G060 5 Series (G60): 3 of 7 CAFD ids dynamically calculated</title></path>
+<path d="M275,450 H462.57142857142856 V464 H275 Z" fill="#2a78d6"><title>G060 5 Series (G60): 4 of 7 CAFD ids with verified BMW names</title></path>
+<text x="614" y="461.5" font-size="12" font-weight="400" fill="#0b0b0b">57%<tspan font-weight="400" fill="#898781">  4 of 7</tspan></text>
+<text x="24" y="487.5" font-size="13" font-weight="600" fill="#0b0b0b">G070</text>
+<text x="70" y="487.5" font-size="13" fill="#52514e">7 Series (G70)</text>
+<path d="M275,476 H600 Q604,476 604,480 V486 Q604,490 600,490 H275 Z" fill="#cfe0f5"><title>G070 7 Series (G70): 4 of 7 CAFD ids dynamically calculated</title></path>
+<path d="M275,476 H415.42857142857144 V490 H275 Z" fill="#2a78d6"><title>G070 7 Series (G70): 3 of 7 CAFD ids with verified BMW names</title></path>
+<text x="614" y="487.5" font-size="12" font-weight="400" fill="#0b0b0b">43%<tspan font-weight="400" fill="#898781">  3 of 7</tspan></text>
+<text x="24" y="513.5" font-size="13" font-weight="600" fill="#0b0b0b">U006</text>
+<text x="70" y="513.5" font-size="13" fill="#52514e">2 Series Active Tourer (U06)</text>
+<path d="M275,502 H600 Q604,502 604,506 V512 Q604,516 600,516 H275 Z" fill="#cfe0f5"><title>U006 2 Series Active Tourer (U06): 5 of 8 CAFD ids dynamically calculated</title></path>
+<path d="M275,502 H397.75 V516 H275 Z" fill="#2a78d6"><title>U006 2 Series Active Tourer (U06): 3 of 8 CAFD ids with verified BMW names</title></path>
+<text x="614" y="513.5" font-size="12" font-weight="400" fill="#0b0b0b">38%<tspan font-weight="400" fill="#898781">  3 of 8</tspan></text>
+<text x="24" y="559.5" font-size="14.5" font-weight="700" fill="#0b0b0b">F-chassis</text>
+<text x="116" y="559.5" font-size="12.5" fill="#52514e">all CAFD ids</text>
+<path d="M275,546 H600 Q604,546 604,550 V560 Q604,564 600,564 H275 Z" fill="#bfd2ec"><title>F-chassis all CAFD ids: 123 of 254 CAFD ids dynamically calculated</title></path>
+<path d="M275,546 H444.1968503937008 V564 H275 Z" fill="#1b4f8f"><title>F-chassis all CAFD ids: 131 of 254 CAFD ids with verified BMW names</title></path>
+<text x="614" y="559.5" font-size="13.5" font-weight="700" fill="#0b0b0b">52%<tspan font-weight="400" fill="#898781">  131 of 254</tspan></text>
+<text x="24" y="591.5" font-size="13" font-weight="600" fill="#0b0b0b">F030</text>
+<text x="70" y="591.5" font-size="13" fill="#52514e">3/4 Series F30-F36, M3/M4</text>
+<path d="M275,580 H600 Q604,580 604,584 V590 Q604,594 600,594 H275 Z" fill="#cfe0f5"><title>F030 3/4 Series F30-F36, M3/M4: 0 of 94 CAFD ids dynamically calculated</title></path>
+<path d="M275,580 H600.0 Q604.0,580 604.0,584 V590 Q604.0,594 600.0,594 H275 Z" fill="#2a78d6"><title>F030 3/4 Series F30-F36, M3/M4: 94 of 94 CAFD ids with verified BMW names</title></path>
+<text x="614" y="591.5" font-size="12" font-weight="400" fill="#0b0b0b">100%<tspan font-weight="400" fill="#898781">  94 of 94</tspan></text>
+<text x="24" y="617.5" font-size="13" font-weight="600" fill="#0b0b0b">F020</text>
+<text x="70" y="617.5" font-size="13" fill="#52514e">1/2 Series F20-F23, M2</text>
+<path d="M275,606 H600 Q604,606 604,610 V616 Q604,620 600,620 H275 Z" fill="#cfe0f5"><title>F020 1/2 Series F20-F23, M2: 4 of 80 CAFD ids dynamically calculated</title></path>
+<path d="M275,606 H587.5 V620 H275 Z" fill="#2a78d6"><title>F020 1/2 Series F20-F23, M2: 76 of 80 CAFD ids with verified BMW names</title></path>
+<text x="614" y="617.5" font-size="12" font-weight="400" fill="#0b0b0b">95%<tspan font-weight="400" fill="#898781">  76 of 80</tspan></text>
+<text x="24" y="643.5" font-size="13" font-weight="600" fill="#0b0b0b">F040</text>
+<text x="70" y="643.5" font-size="13" fill="#52514e">1 Series F40, 2 Gran Coupé</text>
+<path d="M275,632 H600 Q604,632 604,636 V642 Q604,646 600,646 H275 Z" fill="#cfe0f5"><title>F040 1 Series F40, 2 Gran Coupé: 10 of 54 CAFD ids dynamically calculated</title></path>
+<path d="M275,632 H542.8888888888889 V646 H275 Z" fill="#2a78d6"><title>F040 1 Series F40, 2 Gran Coupé: 44 of 54 CAFD ids with verified BMW names</title></path>
+<text x="614" y="643.5" font-size="12" font-weight="400" fill="#0b0b0b">81%<tspan font-weight="400" fill="#898781">  44 of 54</tspan></text>
+<text x="24" y="669.5" font-size="13" font-weight="600" fill="#0b0b0b">F015</text>
+<text x="70" y="669.5" font-size="13" fill="#52514e">X5/X6 F15/F16, X5 M/X6 M</text>
+<path d="M275,658 H600 Q604,658 604,662 V668 Q604,672 600,672 H275 Z" fill="#cfe0f5"><title>F015 X5/X6 F15/F16, X5 M/X6 M: 27 of 87 CAFD ids dynamically calculated</title></path>
+<path d="M275,658 H501.58620689655174 V672 H275 Z" fill="#2a78d6"><title>F015 X5/X6 F15/F16, X5 M/X6 M: 60 of 87 CAFD ids with verified BMW names</title></path>
+<text x="614" y="669.5" font-size="12" font-weight="400" fill="#0b0b0b">69%<tspan font-weight="400" fill="#898781">  60 of 87</tspan></text>
+<text x="24" y="695.5" font-size="13" font-weight="600" fill="#0b0b0b">F025</text>
+<text x="70" y="695.5" font-size="13" fill="#52514e">X3/X4 F25/F26</text>
+<path d="M275,684 H600 Q604,684 604,688 V694 Q604,698 600,698 H275 Z" fill="#cfe0f5"><title>F025 X3/X4 F25/F26: 30 of 87 CAFD ids dynamically calculated</title></path>
+<path d="M275,684 H490.2068965517241 V698 H275 Z" fill="#2a78d6"><title>F025 X3/X4 F25/F26: 57 of 87 CAFD ids with verified BMW names</title></path>
+<text x="614" y="695.5" font-size="12" font-weight="400" fill="#0b0b0b">66%<tspan font-weight="400" fill="#898781">  57 of 87</tspan></text>
+<text x="24" y="721.5" font-size="13" font-weight="600" fill="#0b0b0b">F045</text>
+<text x="70" y="721.5" font-size="13" fill="#52514e">2 Active/Gran Tourer</text>
+<path d="M275,710 H600 Q604,710 604,714 V720 Q604,724 600,724 H275 Z" fill="#cfe0f5"><title>F045 2 Active/Gran Tourer: 23 of 56 CAFD ids dynamically calculated</title></path>
+<path d="M275,710 H468.4642857142857 V724 H275 Z" fill="#2a78d6"><title>F045 2 Active/Gran Tourer: 33 of 56 CAFD ids with verified BMW names</title></path>
+<text x="614" y="721.5" font-size="12" font-weight="400" fill="#0b0b0b">59%<tspan font-weight="400" fill="#898781">  33 of 56</tspan></text>
+<text x="24" y="747.5" font-size="13" font-weight="600" fill="#0b0b0b">F056</text>
+<text x="70" y="747.5" font-size="13" fill="#52514e">MINI F54-F60</text>
+<path d="M275,736 H600 Q604,736 604,740 V746 Q604,750 600,750 H275 Z" fill="#cfe0f5"><title>F056 MINI F54-F60: 30 of 64 CAFD ids dynamically calculated</title></path>
+<path d="M275,736 H449.3125 V750 H275 Z" fill="#2a78d6"><title>F056 MINI F54-F60: 34 of 64 CAFD ids with verified BMW names</title></path>
+<text x="614" y="747.5" font-size="12" font-weight="400" fill="#0b0b0b">53%<tspan font-weight="400" fill="#898781">  34 of 64</tspan></text>
+<text x="24" y="773.5" font-size="13" font-weight="600" fill="#0b0b0b">F010</text>
+<text x="70" y="773.5" font-size="13" fill="#52514e">5/6 Series F10-F13, M5/M6</text>
+<path d="M275,762 H600 Q604,762 604,766 V772 Q604,776 600,776 H275 Z" fill="#cfe0f5"><title>F010 5/6 Series F10-F13, M5/M6: 63 of 127 CAFD ids dynamically calculated</title></path>
+<path d="M275,762 H440.2992125984252 V776 H275 Z" fill="#2a78d6"><title>F010 5/6 Series F10-F13, M5/M6: 64 of 127 CAFD ids with verified BMW names</title></path>
+<text x="614" y="773.5" font-size="12" font-weight="400" fill="#0b0b0b">50%<tspan font-weight="400" fill="#898781">  64 of 127</tspan></text>
+<text x="24" y="799.5" font-size="13" font-weight="600" fill="#0b0b0b">F001</text>
+<text x="70" y="799.5" font-size="13" fill="#52514e">7 Series F01/F02</text>
+<path d="M275,788 H600 Q604,788 604,792 V798 Q604,802 600,802 H275 Z" fill="#cfe0f5"><title>F001 7 Series F01/F02: 69 of 130 CAFD ids dynamically calculated</title></path>
+<path d="M275,788 H428.8461538461538 V802 H275 Z" fill="#2a78d6"><title>F001 7 Series F01/F02: 61 of 130 CAFD ids with verified BMW names</title></path>
+<text x="614" y="799.5" font-size="12" font-weight="400" fill="#0b0b0b">47%<tspan font-weight="400" fill="#898781">  61 of 130</tspan></text>
+<text x="24" y="848" font-size="11.5" fill="#52514e">Bars count CAFD ids. Across all G020 and F030 CAFD versions, about 89% of functions carry verified BMW names.</text>
+<text x="24" y="864" font-size="11.5" fill="#52514e">Family totals count each CAFD id once. G60, G70 and U06 list only 7-8 CAFD ids in psdzdata; G045 and F070 (2-4 ids) are left out.</text>
+<text x="24" y="880" font-size="11.5" fill="#898781">Percentages: verified share. Data: definitions 2026.11.13.5.</text>
 </svg>

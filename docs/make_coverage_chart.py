@@ -42,26 +42,30 @@ GROUPS = [
 
 THEMES = {
     "light": dict(surface="#fcfcfb", ink="#0b0b0b", ink2="#52514e", muted="#898781", grid="#e1e0d9",
-                  axis="#c3c2b7", bar="#2a78d6", sum="#1b4f8f", border="#e1e0d9", band="#f3f2ee"),
+                  axis="#c3c2b7", bar="#2a78d6", sum="#1b4f8f", dyn="#cfe0f5", sumdyn="#bfd2ec",
+                  border="#e1e0d9", band="#f3f2ee"),
     "dark": dict(surface="#1a1a19", ink="#f0efec", ink2="#c3c2b7", muted="#898781", grid="#2c2c2a",
-                 axis="#383835", bar="#3987e5", sum="#8bbcf5", border="#2c2c2a", band="#232322"),
+                 axis="#383835", bar="#3987e5", sum="#8bbcf5", dyn="#28384d", sumdyn="#334760",
+                 border="#2c2c2a", band="#232322"),
 }
 
 W, PAD = 760, 24
 LABEL_W = 250          # series code + cars
 BAR_X = PAD + LABEL_W
-BAR_W = 360            # 100 %
+BAR_W = 330            # 100 %
 ROW_H, BAR_H = 26, 14
 SUM_H, SUM_BAR = 34, 18
 GAP = 18               # space before each family
-TOP = 84
+TOP = 104
 FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
 
 
-def bar_path(x, y, w, h, r=4):
-    """Bar anchored square at the baseline (left), rounded at the data end (right)."""
+def bar_path(x, y, w, h, r=4, round_end=True):
+    """Bar anchored square at the baseline (left); rounded at the right end unless another segment follows."""
     w = max(w, 2)
-    r = min(r, w / 2, h / 2)
+    r = min(r, w / 2, h / 2) if round_end else 0
+    if not r:
+        return f"M{x},{y} H{x + w} V{y + h} H{x} Z"
     return (f"M{x},{y} H{x + w - r} Q{x + w},{y} {x + w},{y + r} V{y + h - r} "
             f"Q{x + w},{y + h} {x + w - r},{y + h} H{x} Z")
 
@@ -84,16 +88,26 @@ def svg(t):
     c = THEMES[t]
     items, bottom = layout()
     H = bottom + 94
-    desc = "; ".join(f"{fam}: {n} of {tot} CAFD ids (" + ", ".join(f"{s} {rn} of {rt}" for s, _, rn, rt in rows) + ")"
+    desc = "; ".join(f"{fam}: {n} of {tot} CAFD ids verified, the rest dynamically calculated ("
+                     + ", ".join(f"{s} {rn} of {rt}" for s, _, rn, rt in rows) + ")"
                      for fam, n, tot, rows in GROUPS)
     o = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" '
          f'font-family="{FONT}" role="img" aria-labelledby="t d">',
-         '<title id="t">BMW names by chassis</title>',
-         f'<desc id="d">Share of CAFD ids that have BMW untrimmed names in OpenLauncher. {escape(desc)}</desc>',
+         '<title id="t">Coding names by chassis</title>',
+         f'<desc id="d">Every CAFD is named in OpenLauncher: share of CAFD ids with verified BMW names, the rest '
+         f'dynamically calculated. {escape(desc)}</desc>',
          f'<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="10" fill="{c["surface"]}" stroke="{c["border"]}"/>',
-         f'<text x="{PAD}" y="34" font-size="17" font-weight="600" fill="{c["ink"]}">BMW names by chassis</text>',
-         f'<text x="{PAD}" y="56" font-size="13" fill="{c["ink2"]}">Share of CAFDs that come with BMW\'s own group, '
-         f'function and value names</text>']
+         f'<text x="{PAD}" y="34" font-size="17" font-weight="600" fill="{c["ink"]}">Coding names by chassis</text>',
+         f'<text x="{PAD}" y="56" font-size="13" fill="{c["ink2"]}">Every CAFD is named: BMW\'s own verified names '
+         f'where they exist, dynamically calculated names for the rest</text>']
+    # legend
+    lx, ly = PAD, 72
+    o.append(f'<rect x="{lx}" y="{ly}" width="12" height="12" rx="2" fill="{c["bar"]}"/>')
+    o.append(f'<text x="{lx + 18}" y="{ly + 10.5}" font-size="12" fill="{c["ink2"]}">Verified BMW names</text>')
+    lx2 = lx + 160
+    o.append(f'<rect x="{lx2}" y="{ly}" width="12" height="12" rx="2" fill="{c["dyn"]}"/>')
+    o.append(f'<text x="{lx2 + 18}" y="{ly + 10.5}" font-size="12" fill="{c["ink2"]}">Dynamically calculated by '
+             f'OpenLauncher</text>')
     # family bands behind the summary rows
     for kind, y, *_ in items:
         if kind == "sum":
@@ -113,21 +127,26 @@ def svg(t):
         if kind == "sum":
             o.append(f'<text x="{PAD}" y="{cy}" font-size="14.5" font-weight="700" fill="{c["ink"]}">{label}</text>')
             o.append(f'<text x="{PAD + 92}" y="{cy}" font-size="12.5" fill="{c["ink2"]}">{sub}</text>')
-            fill, size, weight = c["sum"], 13.5, "700"
+            fill, dyn, size, weight = c["sum"], c["sumdyn"], 13.5, "700"
         else:
             o.append(f'<text x="{PAD}" y="{cy}" font-size="13" font-weight="600" fill="{c["ink"]}">{label}</text>')
             o.append(f'<text x="{PAD + 46}" y="{cy}" font-size="13" fill="{c["ink2"]}">{escape(sub)}</text>')
-            fill, size, weight = c["bar"], 12, "400"
-        o.append(f'<path d="{bar_path(BAR_X + 1, y, w - 1, h)}" fill="{fill}"><title>{label} {escape(sub)}: '
-                 f'{n} of {tot} CAFD ids</title></path>')
-        o.append(f'<text x="{BAR_X + w + 8}" y="{cy}" font-size="{size}" font-weight="{weight}" fill="{c["ink"]}">'
+            fill, dyn, size, weight = c["bar"], c["dyn"], 12, "400"
+        # remainder first (full width, rounded end), verified share on top (square end where the remainder follows)
+        o.append(f'<path d="{bar_path(BAR_X + 1, y, BAR_W - 1, h)}" fill="{dyn}"><title>{label} {escape(sub)}: '
+                 f'{tot - n} of {tot} CAFD ids dynamically calculated</title></path>')
+        if n:
+            o.append(f'<path d="{bar_path(BAR_X + 1, y, w - 1, h, round_end=(n == tot))}" fill="{fill}"><title>'
+                     f'{label} {escape(sub)}: {n} of {tot} CAFD ids with verified BMW names</title></path>')
+        o.append(f'<text x="{BAR_X + BAR_W + 10}" y="{cy}" font-size="{size}" font-weight="{weight}" fill="{c["ink"]}">'
                  f'{pct}%<tspan font-weight="400" fill="{c["muted"]}">  {n} of {tot}</tspan></text>')
     fy = y1 + 38
-    o.append(f'<text x="{PAD}" y="{fy}" font-size="11.5" fill="{c["ink2"]}">Across all G020 and F030 CAFD versions, '
-             f'about 89% of functions carry verified BMW names; OpenLauncher dynamically calculates the rest.</text>')
+    o.append(f'<text x="{PAD}" y="{fy}" font-size="11.5" fill="{c["ink2"]}">Bars count CAFD ids. Across all G020 and '
+             f'F030 CAFD versions, about 89% of functions carry verified BMW names.</text>')
     o.append(f'<text x="{PAD}" y="{fy + 16}" font-size="11.5" fill="{c["ink2"]}">Family totals count each CAFD id once. '
              f'G60, G70 and U06 list only 7-8 CAFD ids in psdzdata; G045 and F070 (2-4 ids) are left out.</text>')
-    o.append(f'<text x="{PAD}" y="{fy + 32}" font-size="11.5" fill="{c["muted"]}">Data: {DATA}.</text>')
+    o.append(f'<text x="{PAD}" y="{fy + 32}" font-size="11.5" fill="{c["muted"]}">Percentages: verified share. '
+             f'Data: {DATA}.</text>')
     o.append('</svg>')
     return "\n".join(o) + "\n"
 
