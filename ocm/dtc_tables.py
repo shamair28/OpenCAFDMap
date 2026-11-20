@@ -2,7 +2,7 @@
 r"""Build the DTC tool's shipped fault texts (data\dtc\) on the maintainer's machine. Users never run this:
 OpenLauncher only needs E-Sys and these tables.
 
-    python ocm\dtc_tables.py --ista <decrypted DiagDocDb.sqlite>
+    python ocm\dtc_tables.py --ista <DiagDocDb.sqlite> --key <encryption_key>
 
 Writes (deterministic gzip, so an unchanged rebuild gives identical files):
   data\dtc\faults.tsv.gz   diagnostic address (hex), fault code (hex, as the ECU reports it), then up to 3 texts
@@ -14,13 +14,14 @@ Writes (deterministic gzip, so an unchanged rebuild gives identical files):
                            title at that address), shown when E-Sys has no SVT with the module's name
   data\dtc\SOURCES.txt     the ISTA version the tables were built from
 """
+import apsw
 import argparse
 import collections
 import gzip
 import io
 import os
-import sqlite3
 import sys
+import urllib.parse
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config  # noqa: E402
@@ -33,8 +34,13 @@ def clean(s):
     return " ".join((s or "").replace("|", "/").split())
 
 
-def build(ista):
-    con = sqlite3.connect(f"file:{ista}?mode=ro", uri=True)
+def build(ista, key):
+    params = urllib.parse.urlencode({
+        "cipher": "rc4",
+        "key": key
+    })
+    con = apsw.Connection(f"file:{ista}?{params}", 
+                          flags = apsw.SQLITE_OPEN_URI | apsw.SQLITE_OPEN_READONLY)
     q = ("SELECT g.DIAGNOSTIC_ADDRESS, f.CODE, l.TITLE_ENGB, l.TITLE_DEDE "
          "FROM XEP_FAULTCODES f JOIN XEP_ECUVARIANTS v ON v.ID = f.ECUVARIANTID "
          "JOIN XEP_ECUGROUPS g ON g.ID = v.ECUGROUPID "
@@ -60,7 +66,7 @@ def build(ista):
     try:
         ver = con.execute("SELECT VERSION FROM RG_VERSION WHERE SUBSYSTEM = 'DATABASE'").fetchone()
         ver = ver[0] if ver else None
-    except sqlite3.Error:
+    except apsw.Error:
         ver = None
     con.close()
     rows = []
@@ -80,9 +86,10 @@ def write_gz(path, text):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--ista", required=True, help="decrypted ISTA DiagDocDb .sqlite (maintainer only)")
+    ap.add_argument("--ista", required=True, help="ISTA DiagDocDb.sqlite (maintainer only)")
+    ap.add_argument("--key", required=True, help="Encryption key (maintainer only)")
     a = ap.parse_args()
-    rows, modules, ver = build(a.ista)
+    rows, modules, ver = build(a.ista, a.key)
     os.makedirs(OUT, exist_ok=True)
     write_gz(os.path.join(OUT, "faults.tsv.gz"), "addr\tcode\ttexts (English|German, most common first)\n" +
              "\n".join(rows) + "\n")
