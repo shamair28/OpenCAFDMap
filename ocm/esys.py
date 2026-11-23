@@ -115,6 +115,9 @@ def check_java(esys_dir):
 # ------------------------------------------------------------------ E-Sys.bat
 _VAR = re.compile(r"%([^%\s]+?)%")
 KEEP_PREFIXES = ("-X", "-D")                       # VM options taken from E-Sys.bat; everything else is dropped
+# Java 9+ module options E-Sys needs for its own reflection (E-Sys 26.04: --add-opens java.base/java.lang=ALL-UNNAMED).
+# They take their value as the next token (or after '='); kept as given.
+KEEP_WITH_VALUE = ("--add-opens", "--add-exports", "--add-modules", "--add-reads", "--enable-native-access")
 
 
 def _expand(s, env, esys_dir):
@@ -168,7 +171,13 @@ def parse_bat(esys_dir):
                     cp = rest[k + 1].split(";")
                     k += 2
                     continue
-                if t.startswith("-splash:"):
+                if t in KEEP_WITH_VALUE and k + 1 < len(rest):
+                    opts += [t, rest[k + 1]]
+                    k += 2
+                    continue
+                if t.split("=", 1)[0] in KEEP_WITH_VALUE:
+                    opts.append(t)
+                elif t.startswith("-splash:"):
                     pass                            # we show our own splash
                 elif t.startswith(KEEP_PREFIXES):
                     opts.append(t.replace("/", "\\"))
