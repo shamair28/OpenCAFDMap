@@ -498,8 +498,9 @@
   var split = null, lastCaf = null;
 
   function open() {
-    var ctl = Java.type("com.bmw.esys.gui.control.EsysController");
-    var inst = h.field(null, h.cls("com.bmw.esys.gui.control.EsysController"), "instance").get(null);
+    var ctlClass = h.cls("com.bmw.esys.gui.control.EsysController");     // EsysGUIController on E-Sys 26.04
+    var ctl = Java.type(ctlClass.getName());                             // static openModule(...) below
+    var inst = h.field(null, ctlClass, "instance").get(null);
     var frame = h.esysFrame();
     var curField = h.field(null, h.cls("com.bmw.esys.gui.control.EsysFrame"), "currentView");
     // Is E-Sys's FDL editor view (or our split around it) what's on screen? E-Sys's "current module" isn't enough: one

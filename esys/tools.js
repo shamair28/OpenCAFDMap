@@ -22,7 +22,16 @@
   var CAF_DIR = System.getProperty("ocm.cafdir") ? String(System.getProperty("ocm.cafdir")) : null;
 
   // ------------------------------------------------------------------ E-Sys plumbing
-  function cls(name) { try { return java.lang.Class.forName(name); } catch (e) { return null; } }
+  // E-Sys classes that moved between versions: the name our scripts use -> where newer E-Sys has it (26.04 moved its
+  // GUI controllers and tree nodes into packages of their own). cls() tries the name as given, then the new one.
+  var MOVED = {
+    "com.bmw.esys.gui.control.EsysController": "com.bmw.esys.gui.control.guicontroller.EsysGUIController",
+    "com.bmw.esys.gui.fdl.Fdl1TreeNode": "com.bmw.esys.gui.fdl.model.Fdl1TreeNode"
+  };
+  function cls(name) {
+    try { return java.lang.Class.forName(name); } catch (e) {}
+    try { return MOVED[name] ? java.lang.Class.forName(MOVED[name]) : null; } catch (e2) { return null; }
+  }
 
   function field(obj, clazz, name) {
     var f = clazz.getDeclaredField(name);

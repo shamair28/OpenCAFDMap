@@ -99,17 +99,48 @@ def esys_version(esys_dir):
 
 
 def nashorn_options(esys_dir):
-    """-Dnashorn.args only where the JRE knows the flag (Java 11-14); Java 8 refuses to start with it."""
-    return ["-Dnashorn.args=--no-deprecation-warning"] if java_major(esys_dir) >= 11 else []
+    """-Dnashorn.args only where the JRE's own Nashorn knows the flag (Java 11-14); Java 8 refuses to start with it,
+    and the standalone Nashorn (Java 15+) doesn't warn."""
+    return ["-Dnashorn.args=--no-deprecation-warning"] if 11 <= java_major(esys_dir) <= NASHORN_LAST else []
+
+
+# Java 15+ (E-Sys 26.04: Java 17) has no Nashorn of its own: OpenJDK's standalone Nashorn (nashorn-core + its ASM
+# jars) runs our scripts instead, from lib\nashorn\, put ahead of E-Sys's classpath.
+NASHORN_DIR = os.path.join(config.ROOT, "lib", "nashorn")
+STANDALONE_SHELL = "org.openjdk.nashorn.tools.Shell"
+
+
+def nashorn_jars():
+    jars = sorted(os.path.join(NASHORN_DIR, f) for f in (os.listdir(NASHORN_DIR) if os.path.isdir(NASHORN_DIR) else [])
+                  if f.lower().endswith(".jar"))
+    return jars if any(os.path.basename(j).startswith("nashorn-core-") for j in jars) else []
+
+
+def script_runner(esys_dir):
+    """(main class, classpath entries put first) that run our JavaScript on this E-Sys's Java."""
+    if java_major(esys_dir) <= NASHORN_LAST:
+        return "jdk.nashorn.tools.Shell", []
+    return STANDALONE_SHELL, nashorn_jars()
 
 
 def check_java(esys_dir):
     j = java_major(esys_dir)
-    if j > NASHORN_LAST:
-        raise SystemExit(f"This E-Sys ({esys_version(esys_dir) or 'unknown version'}) uses Java {j}. OpenLauncher "
-                         f"starts E-Sys through Java's JavaScript runner, which only exists up to Java {NASHORN_LAST}, "
-                         "so this E-Sys version is not supported yet.")
+    if j > NASHORN_LAST and not nashorn_jars():
+        raise SystemExit(f"This E-Sys ({esys_version(esys_dir) or 'unknown version'}) uses Java {j}, which has no "
+                         f"JavaScript runner of its own (Java's Nashorn ends with Java {NASHORN_LAST}), and the "
+                         f"standalone Nashorn isn't in {NASHORN_DIR}.")
     return j
+
+
+def module_options(spec):
+    """E-Sys.bat's Java module options (--add-opens ...), which a Java 9+ E-Sys needs for its own reflection."""
+    out, opts = [], spec["vm_options"]
+    for i, o in enumerate(opts):
+        if o in KEEP_WITH_VALUE and i + 1 < len(opts):
+            out += [o, opts[i + 1]]
+        elif o.split("=", 1)[0] in KEEP_WITH_VALUE and "=" in o:
+            out.append(o)
+    return out
 
 
 # ------------------------------------------------------------------ E-Sys.bat
@@ -385,9 +416,10 @@ def launch_command(cfg, spec=None):
     ] + nashorn_options(d)
     if option(cfg, "launch_labels") and option(cfg, "launch_on_demand"):   # CAFDs without a definition get one on demand
         props.append(f"-Docm.runtime={os.path.join(p.workspace, 'runtime_cafd', cfg['series'])}")
+    shell, extra_cp = script_runner(d)
     return [javaw] + vm_options(cfg, spec) + props + [
-        "-cp", ";".join(spec["classpath"]), f"-splash:{splash_image()}",
-        "jdk.nashorn.tools.Shell", os.path.join(config.ESYS_SCRIPTS, "bootstrap.js")]
+        "-cp", ";".join(extra_cp + spec["classpath"]), f"-splash:{splash_image()}",
+        shell, os.path.join(config.ESYS_SCRIPTS, "bootstrap.js")]
 
 
 def esys_log(cfg):
@@ -445,8 +477,9 @@ def run_script(script, args, cfg=None, log=None, on_line=None):
     spec = launch_spec(d)
     java = os.path.join(d, "jre", "bin", "java.exe")
     dopts = [o for o in spec["vm_options"] if o.startswith("-D")]   # e.g. java.endorsed.dirs on E-Sys 3.x
-    cmd = [java, "-Xmx2048m"] + dopts + nashorn_options(d) + ["-cp", ";".join(spec["classpath"]),
-                                                               "jdk.nashorn.tools.Shell", script, "--"] + [str(a) for a in args]
+    shell, extra_cp = script_runner(d)
+    cmd = ([java, "-Xmx2048m"] + module_options(spec) + dopts + nashorn_options(d)
+           + ["-cp", ";".join(extra_cp + spec["classpath"]), shell, script, "--"] + [str(a) for a in args])
     lf = open(log, "a", encoding="utf-8") if log else None
     pr = subprocess.Popen(cmd, cwd=spec["cwd"], env=env_for(d), creationflags=NO_WINDOW,
                           stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,

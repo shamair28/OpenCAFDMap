@@ -14,7 +14,12 @@
   var log = api.log;
   var DATA_DIR = api.dataDir ? new File(api.dataDir) : null;
 
-  function cls(name) { try { return java.lang.Class.forName(name); } catch (e) { return null; } }
+  // E-Sys 26.04 moved its main controller (same members); as in tools.js
+  var MOVED = { "com.bmw.esys.gui.control.EsysController": "com.bmw.esys.gui.control.guicontroller.EsysGUIController" };
+  function cls(name) {
+    try { return java.lang.Class.forName(name); } catch (e) {}
+    try { return MOVED[name] ? java.lang.Class.forName(MOVED[name]) : null; } catch (e2) { return null; }
+  }
   var C = {
     esys: cls("com.bmw.esys.gui.control.EsysController"),
     tree: cls("com.bmw.esys.gui.AbstractTreeController"),

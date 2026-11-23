@@ -1,6 +1,21 @@
 # Porting OpenLauncher to E-Sys on Java 17 (E-Sys 26.04)
 
-Working notes for the `java-17-compat` branch (based on `v3-testing`). Status: investigation.
+Working notes for the `java-17-compat` branch (based on `v3-testing`).
+
+## Status (2026-11-23): option A works
+With OpenJDK's standalone Nashorn 15.7 (`lib/nashorn/`, see its README) on E-Sys 26.04.02:
+- **E-Sys starts through OpenLauncher**; the agent loads, and the OpenLauncher section shows Compare NCD, Cheat Sheet,
+  FA Helper and DTC.
+- **Labels**: headless agent test (CAFD 00002458) labels 20/22 functions from the untrimmed names, saves the CAFD
+  through jakarta JAXB, builds its definition on demand (3.5 s) and relabels 22/22 functions, 34/34 values.
+- **Decrypt** (`decrypt.js` with 26.04's PsdZ): byte-identical output to E-Sys 25.10 for the CAFDs tested.
+- **E-Sys 25.10** (Java 11) still uses the JRE's own Nashorn; same results as before.
+- **Not checked yet**: labels in the live CAF / FDL trees, the tools' views on screen (a screen overlay hid them in the
+  test), Cheat Sheet Apply (needs the FDL controller, see 4.), FA/SVT backup and DTC against a car.
+
+Changes on the branch: `ocm/esys.py` (E-Sys.bat module options; `script_runner` picks the standalone Nashorn on Java
+15+ and passes `--add-opens` to headless scripts), `esys/*.js` (moved GUI classes looked up under both names;
+`jaxbFor()` picks javax or jakarta JAXB from the model class's annotations).
 
 ## What changed in E-Sys 26.04.02
 - **Java:** bundled JRE is Azul Zulu **17.0.16**. Nashorn (`jdk.scripting.nashorn`) was removed from Java in 15, and
@@ -28,7 +43,9 @@ Working notes for the `java-17-compat` branch (based on `v3-testing`). Status: i
    (`KEEP_WITH_VALUE` in `ocm/esys.py`); 25.10 parses as before.
 3. **Renamed GUI classes** (above): 6 scripts reach E-Sys through `EsysController`; `agent.js` calls
    `gui.fdl.Fdl1TreeNode` directly. A lookup that tries the new name, then the old, keeps 25.10 working.
-4. **Cheat Sheet Apply**: 25.10's FDL module had `getFDLController()`; 26.04's `FdlEditorController` doesn't. Needs a
+4. **JAXB**: 26.04's domain classes carry `jakarta.xml.bind` annotations; `javax.xml.bind` reads and writes them
+   empty. **Fixed on this branch** (`jaxbFor()`).
+5. **Cheat Sheet Apply**: 25.10's FDL module had `getFDLController()`; 26.04's `FdlEditorController` doesn't. Needs a
    new way to reach the FDL tree (likely `fdl.controller.FdlTreeController`).
 
 ## Ways to get a script engine back

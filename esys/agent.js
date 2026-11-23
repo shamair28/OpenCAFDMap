@@ -126,6 +126,16 @@
   } catch (eNoLegacy) {}
   function isLegacyCaf(obj) { return legacyCafClass !== null && obj !== null && legacyCafClass.isInstance(obj); }
 
+  // The JAXB API that matches a model class: javax.xml.bind up to E-Sys 25.x, jakarta.xml.bind from E-Sys 26.04 on
+  // (its domain classes carry jakarta annotations; the wrong API reads and writes them empty).
+  function jaxbFor(cls) {
+    var anns = cls.getAnnotations();
+    for (var i = 0; i < anns.length; i++) {
+      if (String(anns[i].annotationType().getName()).indexOf("jakarta.") === 0) return Packages.jakarta.xml.bind;
+    }
+    return Packages.javax.xml.bind;
+  }
+
   function saveCafXml(caf, file) {
     file.getParentFile().mkdirs();
     var tmp = new File(file.getPath() + ".tmp");
@@ -136,9 +146,9 @@
         if (!legacyCtx) legacyCtx = javax.xml.bind.JAXBContext.newInstance("com.bmw.esys.domain.base.caf");
         legacyCtx.createMarshaller().marshal(caf, os);
       } else {
-        var cls = caf.getClass();
-        if (!jaxbCtx) jaxbCtx = javax.xml.bind.JAXBContext.newInstance(Java.to([cls], "java.lang.Class[]"));
-        jaxbCtx.createMarshaller().marshal(new javax.xml.bind.JAXBElement(new javax.xml.namespace.QName(CAF_NS, "caf"), cls, caf), os);
+        var cls = caf.getClass(), JB = jaxbFor(cls);
+        if (!jaxbCtx) jaxbCtx = JB.JAXBContext.newInstance(Java.to([cls], "java.lang.Class[]"));
+        jaxbCtx.createMarshaller().marshal(new JB.JAXBElement(new javax.xml.namespace.QName(CAF_NS, "caf"), cls, caf), os);
       }
     } finally { os.close(); }
     if (file.exists()) file["delete"]();
@@ -715,13 +725,22 @@
     return true;
   }
 
+  // E-Sys's FDL tree node class: gui.fdl.Fdl1TreeNode up to 25.x, gui.fdl.model.Fdl1TreeNode from 26.04 on
+  var FDL1_TREE_NODE = (function () {
+    var names = ["com.bmw.esys.gui.fdl.model.Fdl1TreeNode", "com.bmw.esys.gui.fdl.Fdl1TreeNode"];
+    for (var i = 0; i < names.length; i++) {
+      try { return Java.type(names[i]); } catch (e) {}
+    }
+    return null;
+  })();
+
   function refreshTreeNodesRecursively(model, node) {
     if (!node) return;
     try {
       var uo = (typeof node.getUserObjectNoWrapper === "function") ? node.getUserObjectNoWrapper() : null;
       if (uo && uo.getClass().getName() === "com.bmw.esys.domain.jaxb.caf1.TInterpretations") {
-        if (node.getChildCount() > 0) {
-          com.bmw.esys.gui.fdl.Fdl1TreeNode.setInterpretationSelectionList(node.getChildAt(0));
+        if (node.getChildCount() > 0 && FDL1_TREE_NODE) {
+          FDL1_TREE_NODE.setInterpretationSelectionList(node.getChildAt(0));
         }
       } else if (uo && legacyInterpClass !== null && legacyInterpClass.isInstance(uo) && node.getChildCount() > 0) {
         // E-Sys 3.x: the "Ausgelesen" (read) value's dropdown still lists the old value names after renaming,

@@ -249,10 +249,20 @@
   }
   // copy of an FA (TFaList) through JAXB, so E-Sys's own document is only replaced on Apply
   var TFaList = cls("com.bmw.esys.domain.jaxb.fal.TFaList");
+  // The JAXB API that matches a model class: javax.xml.bind up to E-Sys 25.x, jakarta.xml.bind from E-Sys 26.04 on
+  // (its domain classes carry jakarta annotations; the wrong API reads and writes them empty).
+  function jaxbFor(cls) {
+    var anns = cls.getAnnotations();
+    for (var i = 0; i < anns.length; i++) {
+      if (String(anns[i].annotationType().getName()).indexOf("jakarta.") === 0) return Packages.jakarta.xml.bind;
+    }
+    return Packages.javax.xml.bind;
+  }
+  function JB() { return jaxbFor(TFaList); }
   function copyList(list) {
-    var ctx = javax.xml.bind.JAXBContext.newInstance(Java.to([TFaList], "java.lang.Class[]"));
+    var ctx = JB().JAXBContext.newInstance(Java.to([TFaList], "java.lang.Class[]"));
     var bos = new java.io.ByteArrayOutputStream(), qn = new javax.xml.namespace.QName("", "faList");
-    ctx.createMarshaller().marshal(new javax.xml.bind.JAXBElement(qn, TFaList, list), bos);
+    ctx.createMarshaller().marshal(new JB().JAXBElement(qn, TFaList, list), bos);
     return ctx.createUnmarshaller().unmarshal(new javax.xml.transform.stream.StreamSource(new java.io.ByteArrayInputStream(bos.toByteArray())), TFaList).getValue();
   }
   // write st into an FA id (in place)
@@ -536,7 +546,7 @@
       if (fc.showOpenDialog(root) !== Sw.JFileChooser.APPROVE_OPTION) return;
       try {
         var f = fc.getSelectedFile();
-        var ctx = javax.xml.bind.JAXBContext.newInstance(Java.to([TFaList], "java.lang.Class[]"));
+        var ctx = JB().JAXBContext.newInstance(Java.to([TFaList], "java.lang.Class[]"));
         var list = ctx.createUnmarshaller().unmarshal(new javax.xml.transform.stream.StreamSource(f), TFaList).getValue();
         if (!list.getId().size()) { status.setText("That file has no FA."); return; }
         load(list, list.getId().get(0), null, String(f.getName()));
@@ -664,10 +674,10 @@
       try {
         var l = copyList(S.list), id = l.getId().get(Math.max(0, S.list.getId().indexOf(S.id)));
         applyState(id, S.st);
-        var ctx = javax.xml.bind.JAXBContext.newInstance(Java.to([TFaList], "java.lang.Class[]"));
+        var ctx = JB().JAXBContext.newInstance(Java.to([TFaList], "java.lang.Class[]"));
         var m = ctx.createMarshaller();
-        m.setProperty(javax.xml.bind.Marshaller.JAXB_FORMATTED_OUTPUT, java.lang.Boolean.TRUE);
-        m.marshal(new javax.xml.bind.JAXBElement(new javax.xml.namespace.QName("", "faList"), TFaList, l), out);
+        m.setProperty(JB().Marshaller.JAXB_FORMATTED_OUTPUT, java.lang.Boolean.TRUE);
+        m.marshal(new JB().JAXBElement(new javax.xml.namespace.QName("", "faList"), TFaList, l), out);
         status.setText("Saved to " + out + ". Load it in E-Sys's FA editor or Coding.");
       } catch (e) { status.setText("Could not save: " + e); }
     });

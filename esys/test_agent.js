@@ -25,8 +25,11 @@ var ins = new java.io.FileInputStream(src);
 if (/\.gz$/i.test(src)) ins = new java.util.zip.GZIPInputStream(ins);
 var obj;
 try {
-  var Caf1 = Java.type("com.bmw.esys.domain.jaxb.caf1.Caf1");                     // E-Sys 25.x
-  var ctx = javax.xml.bind.JAXBContext.newInstance(Java.to([Caf1.class], "java.lang.Class[]"));
+  var Caf1 = Java.type("com.bmw.esys.domain.jaxb.caf1.Caf1");                     // E-Sys 25.x and 26.x
+  var jakartaModel = Java.from(Caf1.class.getAnnotations()).some(function (a) {     // 26.04: jakarta annotations
+    return String(a.annotationType().getName()).indexOf("jakarta.") === 0; });
+  var ctx = (jakartaModel ? Packages.jakarta.xml.bind : Packages.javax.xml.bind).JAXBContext
+    .newInstance(Java.to([Caf1.class], "java.lang.Class[]"));
   obj = ctx.createUnmarshaller().unmarshal(new javax.xml.transform.stream.StreamSource(ins), Caf1.class).getValue();
 } catch (eNo25) {                                                                    // E-Sys 3.x (JAXB1 model)
   obj = javax.xml.bind.JAXBContext.newInstance("com.bmw.esys.domain.base.caf").createUnmarshaller().unmarshal(ins);
