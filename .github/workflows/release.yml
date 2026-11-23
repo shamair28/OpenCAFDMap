@@ -1,5 +1,8 @@
-# Push a version tag (e.g. git tag v1.0.0 && git push origin v1.0.0) to publish a GitHub Release with
-# OpenCAFDMap.zip, its SHA-256 and OpenLauncher-Setup.bat (which installs the latest release).
+# Push a version tag to publish a GitHub Release with OpenCAFDMap.zip, its SHA-256 and OpenLauncher-Setup.bat.
+# The same file on every branch; the tag decides the channel (see ocm/updater.py, CONTRIBUTING.md):
+#   v3.x.y       from main        OpenLauncher v3, GitHub's "latest" release (setup installs it by default)
+#   v3.x.y-rc.N  from v3-testing  v3 preview: a pre-release, never "latest", no setup attached
+#   v2.x.y       from v2          OpenLauncher v2 maintenance release: never "latest"; its setup installs v2
 name: release
 on:
   push:
@@ -21,40 +24,65 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
         run: |
-          cat > notes.md <<EOF
+          install_notes() {
+            cat <<EOF
           ## Install
           1. Download **OpenLauncher-Setup.bat** below and double-click it.
              Windows may warn about a downloaded file: choose *More info* / *Run anyway* if you trust it.
           2. Pick the install folder (default: %LOCALAPPDATA%\\OpenCAFDMap). Setup checks for Python 3.10+
              (it can install it with winget), downloads **OpenCAFDMap.zip**, verifies its SHA-256 and
              creates Desktop / Start menu shortcuts.
-          3. In OpenLauncher: set your E-Sys folder and press **Start E-Sys with Open CAFD Map**. No build is needed for E-Sys;
-             **Build definitions** is only required for the BimmerCode Backup Editor and the command-line tools.
+          3. In OpenLauncher: set your E-Sys folder and press **Start E-Sys with Open CAFD Map**.
 
-          **Upgrading:** run setup again; your workspace and settings are kept.
+          **Upgrading:** use **Update launcher** in OpenLauncher, or run setup again; your workspace and settings are kept.
           **Manual install:** extract OpenCAFDMap.zip anywhere and run OpenLauncher.bat.
-          Definition updates (names) arrive through OpenLauncher's **Check for updates** without reinstalling.
+          Name updates arrive through OpenLauncher's **Check for updates** for every version, without reinstalling.
           EOF
-          assets="dist/OpenCAFDMap.zip dist/OpenCAFDMap.zip.sha256 installer/OpenLauncher-Setup.bat"
-          extra=""
+          }
+          mkdir -p dist/setup
+          cp installer/OpenLauncher-Setup.bat dist/setup/OpenLauncher-Setup.bat
+          assets="dist/OpenCAFDMap.zip dist/OpenCAFDMap.zip.sha256 dist/setup/OpenLauncher-Setup.bat"
           case "$TAG" in
+            v2.*-*)
+              echo "v2 pre-releases aren't a channel: tag v2.x.y" >&2; exit 1 ;;
+            v2.*)
+              # v2 maintenance: never "latest" (that is v3), and its setup installs and upgrades v2
+              sed -i "s/^\$Channel = ''/\$Channel = 'v2'/" dist/setup/OpenLauncher-Setup.bat
+              grep -q "^\$Channel = 'v2'" dist/setup/OpenLauncher-Setup.bat || { echo "setup not stamped for v2" >&2; exit 1; }
+              title="OpenLauncher $TAG (v2)"
+              extra="--latest=false"
+              { cat <<EOF
+          ## OpenLauncher v2 - maintenance release
+          **OpenLauncher v3 is the current version:** [latest release](https://github.com/$REPO/releases/latest).
+          v2 installs update to newer v2 releases only (**Update launcher**). To move to v3: **Updates > Try OpenLauncher v3**.
+          The setup below installs and upgrades v2.
+
+          EOF
+                install_notes; } > notes.md ;;
             *-*)
-              # a tag with a suffix (v3.0.0-beta.1) is a preview: a pre-release, never "latest", so setup and
-              # OpenLauncher's normal updates keep installing the stable release. No setup attached: the stable
-              # release's setup installs it (OCM_SETUP_TAG), and a setup here would install the stable release.
+              # a v3 preview: a pre-release, never "latest". No setup attached: the latest release's setup
+              # installs it when given the tag (OCM_SETUP_TAG), which OpenLauncher does.
               assets="dist/OpenCAFDMap.zip dist/OpenCAFDMap.zip.sha256"
+              title="OpenLauncher $TAG (v3 preview)"
               extra="--prerelease --latest=false"
               cat > notes.md <<EOF
           ## Preview - not the stable release
-          **Try it:** in OpenLauncher, **Updates > Try OpenLauncher v3** (needs OpenLauncher 2.3.4 or newer).
-          Your workspace and settings are kept.
+          **Try it:** in OpenLauncher v3, **Updates > Try the preview**; in v2 (2.3.4 or newer), **Updates > Try OpenLauncher v3**.
+          Your workspace and settings are kept. A preview install follows newer previews and stable v3 releases.
 
-          **Go back:** in v3, **Updates > Back to stable** installs the latest stable release.
+          **Go back:** **Updates > Back to stable** installs the newest stable release.
 
-          **Without OpenLauncher:** download OpenLauncher-Setup.bat from the latest stable release and run it with
-          the environment variable OCM_SETUP_TAG=$TAG set, or extract OpenCAFDMap.zip and run OpenLauncher.bat.
+          **Without OpenLauncher:** download OpenLauncher-Setup.bat from the [latest release](https://github.com/$REPO/releases/latest)
+          and run it with the environment variable OCM_SETUP_TAG=$TAG set, or extract OpenCAFDMap.zip and run OpenLauncher.bat.
           EOF
               ;;
+            v3.*)
+              title="OpenLauncher $TAG"
+              extra="--latest"
+              install_notes > notes.md ;;
+            *)
+              echo "unexpected tag $TAG: v3.x.y, v3.x.y-rc.N or v2.x.y" >&2; exit 1 ;;
           esac
-          gh release create "$TAG" $assets --title "OpenLauncher $TAG" --notes-file notes.md --generate-notes $extra
+          gh release create "$TAG" $assets --title "$title" --notes-file notes.md --generate-notes $extra

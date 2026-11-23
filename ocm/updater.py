@@ -198,11 +198,16 @@ def update(cfg, out=print):
 SETUP_URL = f"https://github.com/{UPDATE_REPO}/releases/latest/download/OpenLauncher-Setup.bat"
 KEEP = ("workspace", "config.json")             # what setup keeps on an upgrade (must match OpenLauncher-Setup.bat)
 
-# OpenLauncher v3 preview: GitHub pre-releases tagged v3.* (release installs) and the testing branch (git clones).
-# Fixed in code like UPDATE_REPO. Pre-releases are never "latest", so stable installs only get one when the user
-# picks "Try OpenLauncher v3"; "Back to stable" installs the latest stable release (or switches back to main).
-PREVIEW_TAG_PREFIX = "v3."
-PREVIEW_BRANCH = "testing"
+# Release channels, by tag (fixed in code like UPDATE_REPO):
+#   v3.x.y        OpenLauncher v3, the current version: GitHub's "latest" release, built from main
+#   v3.x.y-rc.N   v3 previews: GitHub pre-releases from the v3-testing branch, followed only by preview installs
+#   v2.x.y        OpenLauncher v2 maintenance releases from the v2 branch, never "latest"
+# An install follows the newest release of its own major version (CHANNEL), never GitHub's "latest" release, so
+# v2 stays on v2 and v3 on v3. Setup is always given the exact tag to install. Names (definitions.json) come from
+# main for every version. This is OpenLauncher v2: it follows v2 releases; Try OpenLauncher v3 moves it to v3.
+CHANNEL = 2
+PREVIEW_BRANCH = "v3-testing"                   # v3 previews (git clones: Try OpenLauncher v3 before v3.0.0)
+LEGACY_PREVIEW_BRANCHES = ("testing",)          # the v3 preview branch's name before v3.0.0
 TAG_RE = re.compile(r"^v\d+\.\d+\.\d+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$")   # the only tags setup is given
 
 
@@ -233,66 +238,89 @@ def launcher_blocker(cfg=None):
     return None
 
 
-def launcher_latest():
-    raw = _get(f"https://api.github.com/repos/{UPDATE_REPO}/releases/latest", 1024 * 1024)
+def releases():
+    """[(tag, pre-release?)] of the repository's published releases (newest 100) with a valid tag."""
+    raw = _get(f"https://api.github.com/repos/{UPDATE_REPO}/releases?per_page=100", 8 * 1024 * 1024)
     try:
-        tag = json.loads(raw)["tag_name"]
-    except (ValueError, KeyError) as e:
-        raise UpdateError("GitHub's latest-release answer was not understood") from e
-    return str(tag).lstrip("v")
-
-
-def preview_latest():
-    """Newest v3 preview (GitHub pre-release, tag v3.*) as '3.0.0-beta.1', or None if there is none."""
-    raw = _get(f"https://api.github.com/repos/{UPDATE_REPO}/releases?per_page=30", 4 * 1024 * 1024)
-    try:
-        rels = json.loads(raw)
-        tags = [str(r["tag_name"]) for r in rels
-                if r.get("prerelease") and not r.get("draft") and str(r["tag_name"]).startswith(PREVIEW_TAG_PREFIX)]
+        data = json.loads(raw)
+        if not isinstance(data, list):          # e.g. {"message": "API rate limit exceeded ..."}
+            raise ValueError(str(data.get("message") if isinstance(data, dict) else data)[:200])
+        rels = [(str(r["tag_name"]), bool(r.get("prerelease"))) for r in data if not r.get("draft")]
     except (ValueError, KeyError, TypeError, AttributeError) as e:
         raise UpdateError("GitHub's release list was not understood") from e
-    tags = [t for t in tags if TAG_RE.match(t)]
+    return [(t, p) for t, p in rels if TAG_RE.match(t)]
+
+
+def newest(major, prerelease=False, rels=None):
+    """Newest release of a major version as '3.0.1', or with prerelease=True its newest pre-release
+    ('3.1.0-rc.1'); None if there is none."""
+    rels = releases() if rels is None else rels
+    tags = [t for t, p in rels if p == prerelease and t.startswith(f"v{major}.")]
     return max(tags, key=vtuple).lstrip("v") if tags else None
 
 
+def launcher_latest(rels=None):
+    """Newest v2 release (this install's channel), or None."""
+    return newest(CHANNEL, False, rels)
+
+
+def preview_latest(rels=None):
+    """Newest v3 preview (GitHub pre-release, tag v3.*-*) as '3.0.0-rc.6', or None if there is none."""
+    return newest(3, True, rels)
+
+
+def v3_target(rels=None):
+    """What Try OpenLauncher v3 installs: the newest v3 release, or the newest v3 preview before v3.0.0."""
+    rels = releases() if rels is None else rels
+    return newest(3, False, rels) or newest(3, True, rels)
+
+
 def is_preview():
-    """True on the v3 preview: a pre-release install (VERSION like 3.0.0-beta.1) or a clone on the testing branch."""
+    """True on the v3 preview: a pre-release install (VERSION like 3.0.0-rc.6) or a clone on the v3-testing
+    branch."""
     if is_git_clone():
         try:
-            return _git("rev-parse", "--abbrev-ref", "HEAD", check=False) == PREVIEW_BRANCH
+            return _git("rev-parse", "--abbrev-ref", "HEAD", check=False) in (PREVIEW_BRANCH,) + LEGACY_PREVIEW_BRANCHES
         except (OSError, subprocess.SubprocessError):          # git not on PATH (launcher_blocker says so)
             return False
     return "-" in (launcher_installed() or "")
 
 
 def launcher_check():
-    """(installed version, newest version for this install, update available?). A preview install follows the
-    newest preview, or a newer stable release once there is one."""
-    cur, new = launcher_installed(), launcher_latest()
-    if is_preview():
-        pre = preview_latest()
-        if pre and vtuple(pre) > vtuple(new):
-            new = pre
-    return cur, new, cur is not None and vtuple(new) > vtuple(cur)
+    """(installed version, newest version for this install, update available?). A v2 install follows the newest
+    v2 release, whatever GitHub calls "latest" (that is v3). A v3 preview on this code (a v3-testing clone) also
+    follows v3 previews."""
+    cur, rels = launcher_installed(), releases()
+    found = [v for v in (launcher_latest(rels), preview_latest(rels) if is_preview() else None) if v]
+    new = max(found, key=vtuple) if found else None
+    return cur, new or cur, bool(cur and new and vtuple(new) > vtuple(cur))
+
+
+def stable_target():
+    """The newest v2 release (v2 has no preview of its own to come back from)."""
+    return newest(CHANNEL, False)
 
 
 def launcher_update(cfg=None, out=print, version=None):
-    """Download the latest stable release's setup script and start it for this install folder, in its own console.
-    version: a pre-release ('3.0.0-beta.1') to install instead of the latest stable release (setup gets it as
-    OCM_SETUP_TAG). The caller must exit right after: setup replaces the program files (workspace\\ and
-    config.json are kept) and then starts OpenLauncher again."""
+    """Download the newest setup script and start it for this install folder, in its own console, to install
+    exactly `version` ('2.3.11', '3.0.0'; default: the newest v2 release), which setup gets as OCM_SETUP_TAG.
+    Never "whatever GitHub calls latest". The caller must exit right after: setup replaces the program files
+    (workspace\\ and config.json are kept) and then starts OpenLauncher again."""
     why = launcher_blocker(cfg)
     if why:
         raise UpdateError(why)
-    tag = f"v{version.lstrip('v')}" if version and "-" in version else None   # a stable version = latest stable
-    if tag and not TAG_RE.match(tag):
+    version = version or launcher_latest()
+    if not version:
+        raise UpdateError("there's no OpenLauncher v2 release to install")
+    tag = f"v{version.lstrip('v')}"
+    if not TAG_RE.match(tag):
         raise UpdateError(f"not a release tag: {tag}")
     data = _get(SETUP_URL, 1024 * 1024, timeout=60)
     text = data.decode("utf-8", "replace")
     if not text.lstrip().lower().startswith("@echo off") or "#PS-START" not in text or f"'{UPDATE_REPO}'" not in text:
         raise UpdateError("the downloaded setup script doesn't look like OpenLauncher-Setup.bat; nothing was changed")
-    if tag and "OCM_SETUP_TAG" not in text:
-        raise UpdateError("the current setup script can't install a preview yet; nothing was changed")
+    if "OCM_SETUP_TAG" not in text:
+        raise UpdateError("the current setup script can't install a chosen release; nothing was changed")
     tmp = os.path.join(os.environ.get("TEMP") or config.ROOT, "OpenLauncher-update")
     os.makedirs(tmp, exist_ok=True)
     bat = os.path.join(tmp, "OpenLauncher-Setup.bat")
@@ -311,12 +339,12 @@ def launcher_update(cfg=None, out=print, version=None):
 
 
 # ------------------------------------------------------------------ git clone updates
-# A clone follows its origin's main branch, or the testing branch while it runs the v3 preview. "Update" is a
+# A v2 clone follows its origin's v2 branch; on main (v3) or v3-testing (v3 preview) it follows that branch. "Update" is a
 # fast-forward pull (never loses anything). "Force update" also works when that's impossible (local edits or
 # commits): it first saves everything, uncommitted changes to a git stash, local commits to a backup branch, then
 # moves the branch to its origin. workspace\ and config.json are git-ignored, so git never touches them.
-GIT_BRANCH = "main"
-GIT_BRANCHES = (GIT_BRANCH, PREVIEW_BRANCH)     # the only branches OpenLauncher follows or switches to
+GIT_BRANCH = "v2"
+GIT_BRANCHES = (GIT_BRANCH, "main", PREVIEW_BRANCH)     # the only branches OpenLauncher follows or switches to
 
 
 def _git(*args, check=True, timeout=120):
@@ -328,8 +356,11 @@ def _git(*args, check=True, timeout=120):
 
 
 def git_target():
-    """The branch this clone follows: the one it's on if that's main or testing, otherwise main."""
+    """The branch this clone follows: the one it's on if that's v2, main or v3-testing (also for a clone still on
+    the old testing branch), otherwise v2."""
     b = _git("rev-parse", "--abbrev-ref", "HEAD", check=False)
+    if b in LEGACY_PREVIEW_BRANCHES:
+        return PREVIEW_BRANCH
     return b if b in GIT_BRANCHES else GIT_BRANCH
 
 
@@ -352,12 +383,14 @@ def git_state(fetch=True, target=None):
 
 
 def git_update(force=False, out=print, target=None):
-    """Update the clone to origin/<target> (default: the branch it follows; main or testing to switch).
+    """Update the clone to origin/<target> (default: the branch it follows; v2, main or v3-testing to switch).
     Returns True if anything changed."""
     if target is not None and target not in GIT_BRANCHES:
         raise UpdateError(f"OpenLauncher only follows {' or '.join(GIT_BRANCHES)}, not {target}")
     s = git_state(target=target)
     t = s["target"]
+    if s["branch"] in LEGACY_PREVIEW_BRANCHES and t == PREVIEW_BRANCH:
+        force = True                    # the preview branch was renamed: switch the safe way (nothing is lost)
     if not force:
         if s["branch"] != t:
             raise UpdateError(f"the clone is on branch '{s['branch']}', not {t}: use Force update, "
@@ -388,7 +421,7 @@ def git_update(force=False, out=print, target=None):
 
 
 def git_switch(target, out=print):
-    """Switch the clone to main or testing (v3 preview) the safe way: Force update's path, so uncommitted changes
+    """Switch the clone to v2, main (v3) or v3-testing (v3 preview) the safe way: Force update's path, so uncommitted changes
     go to a git stash and local commits to a backup branch first."""
     return git_update(force=True, out=out, target=target)
 

@@ -6,7 +6,9 @@ rem
 rem Unattended / offline use (optional environment variables):
 rem   OCM_SETUP_DIR=<folder>   install folder (default %LOCALAPPDATA%\OpenCAFDMap)
 rem   OCM_SETUP_ZIP=<file>     install from a downloaded OpenCAFDMap.zip instead of GitHub
-rem   OCM_SETUP_TAG=<tag>      install that release (e.g. a v3 preview, v3.0.0-beta.1) instead of the latest
+rem   OCM_SETUP_TAG=<tag>      install that release (e.g. v2.3.11, or a v3 preview v3.1.0-rc.1) instead of the latest
+rem An existing OpenLauncher v2 install is asked whether to upgrade to v3 or stay on v2 (updated unattended
+rem from OpenLauncher v2, it stays on v2).
 rem   OCM_SETUP_QUIET=1        no questions (Python is not installed automatically in quiet mode)
 rem   OCM_SETUP_NO_SHORTCUTS=1 / OCM_SETUP_NO_LAUNCH=1
 setlocal
@@ -77,6 +79,41 @@ $pyw = Join-Path (Split-Path $py) 'pythonw.exe'
 if (-not (Test-Path $pyw)) { $pyw = $py }
 Say "Python: $py"
 
+# ---- which release
+# '' = GitHub's latest release (OpenLauncher v3). The copy of this script on the v2 branch (attached to v2
+# releases) says 'v2', so it installs and upgrades OpenLauncher v2.
+$Channel = ''
+function Get-NewestStable($major) {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $best = $null
+    foreach ($r in (Invoke-RestMethod "https://api.github.com/repos/$Repo/releases?per_page=100" -UseBasicParsing)) {
+        if ($r.draft -or $r.prerelease -or $r.tag_name -notmatch "^v$major\.\d+\.\d+$") { continue }
+        $v = [version]$r.tag_name.Substring(1)
+        if (-not $best -or $v -gt $best) { $best = $v }
+    }
+    if ($best) { return "v$best" } else { return $null }
+}
+$tag = $env:OCM_SETUP_TAG
+if (-not $tag -and -not $env:OCM_SETUP_ZIP) {
+    $installed = if ($upgrade -and (Test-Path (Join-Path $dir 'VERSION'))) { (Get-Content (Join-Path $dir 'VERSION') -Raw).Trim().TrimStart('v') } else { '' }
+    $major = $null
+    if ($Channel -eq 'v2') {
+        $major = 2
+    } elseif ($installed -match '^2\.\d+\.\d+$') {
+        if ($Quiet -and $env:OCM_SETUP_DIR) {
+            # OpenLauncher v2.3.10 and older update themselves with the latest release's setup and no tag: keep them on v2
+            $major = 2
+        } elseif ((Ask "This folder has OpenLauncher v$installed. Upgrade to v3 (3) or keep v2 and update it (2)?" '3') -match '^\s*2') {
+            $major = 2
+        }
+    }
+    if ($major) {
+        try { $tag = Get-NewestStable $major } catch { Fail "Couldn't look up the newest OpenLauncher v$major release on GitHub ($($_.Exception.Message)). Nothing was installed." }
+        if (-not $tag) { Fail "There's no OpenLauncher v$major release on GitHub. Nothing was installed." }
+        Say "Staying on OpenLauncher v${major}: installing $tag"
+    }
+}
+
 # ---- get the release
 $tmp = Join-Path $env:TEMP ("ocm-setup-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory $tmp | Out-Null
@@ -86,13 +123,13 @@ try {
         Say "Using $env:OCM_SETUP_ZIP"
         Copy-Item $env:OCM_SETUP_ZIP $zip
     } else {
-        if ($env:OCM_SETUP_TAG) {
-            # a specific release of this repository only (OpenLauncher's "Try OpenLauncher v3" passes the preview's tag)
-            if ($env:OCM_SETUP_TAG -notmatch '^v\d+\.\d+\.\d+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$') {
-                Fail "OCM_SETUP_TAG '$env:OCM_SETUP_TAG' is not a release tag. Nothing was installed."
+        if ($tag) {
+            # a specific release of this repository only (OpenLauncher's updater always passes the exact tag)
+            if ($tag -notmatch '^v\d+\.\d+\.\d+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$') {
+                Fail "OCM_SETUP_TAG '$tag' is not a release tag. Nothing was installed."
             }
-            $base = "https://github.com/$Repo/releases/download/$env:OCM_SETUP_TAG"
-            Say "Downloading release $env:OCM_SETUP_TAG from github.com/$Repo ..."
+            $base = "https://github.com/$Repo/releases/download/$tag"
+            Say "Downloading release $tag from github.com/$Repo ..."
         } else {
             $base = "https://github.com/$Repo/releases/latest/download"
             Say "Downloading the latest release from github.com/$Repo ..."
