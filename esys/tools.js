@@ -687,5 +687,5 @@
     if (cheat) cheat.tick();
   }
 
-  return { tick: tick, compare: compare, writeDiff: writeDiff };
+  return { tick: tick, compare: compare, writeDiff: writeDiff, cheat: function () { return cheat; } };
 });

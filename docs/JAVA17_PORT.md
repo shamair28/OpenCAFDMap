@@ -9,9 +9,13 @@ With OpenJDK's standalone Nashorn 15.7 (`lib/nashorn/`, see its README) on E-Sys
 - **Labels**: headless agent test (CAFD 00002458) labels 20/22 functions from the untrimmed names, saves the CAFD
   through jakarta JAXB, builds its definition on demand (3.5 s) and relabels 22/22 functions, 34/34 values.
 - **Decrypt** (`decrypt.js` with 26.04's PsdZ): byte-identical output to E-Sys 25.10 for the CAFDs tested.
+- **Live FDL editor + Cheat Sheet Apply** (`python tests\live_apply.py <E-Sys folder> <NCD>`): E-Sys opens the NCD,
+  the agent labels the live tree, and Apply picks a listed value and sets a custom value through E-Sys's own edit path
+  (26.04: `FdlTreeController`, 25.10: `FDLController`). Passes on 26.04.02 and 25.10.03.
 - **E-Sys 25.10** (Java 11) still uses the JRE's own Nashorn; same results as before.
-- **Not checked yet**: labels in the live CAF / FDL trees, the tools' views on screen (a screen overlay hid them in the
-  test), Cheat Sheet Apply (needs the FDL controller, see 4.), FA/SVT backup and DTC against a car.
+- **Not checked yet**: the tools' views on screen (a screen overlay on the test PC hid them), FA/SVT backup and DTC
+  against a car. Cheat Sheet Apply and FA Helper Apply stay behind "Try anyway" on 26.04 until it's added to
+  `TESTED_ESYS` (`ocm/esys.py`).
 
 Changes on the branch: `ocm/esys.py` (E-Sys.bat module options; `script_runner` picks the standalone Nashorn on Java
 15+ and passes `--add-opens` to headless scripts), `esys/*.js` (moved GUI classes looked up under both names;
@@ -45,8 +49,9 @@ Changes on the branch: `ocm/esys.py` (E-Sys.bat module options; `script_runner` 
    `gui.fdl.Fdl1TreeNode` directly. A lookup that tries the new name, then the old, keeps 25.10 working.
 4. **JAXB**: 26.04's domain classes carry `jakarta.xml.bind` annotations; `javax.xml.bind` reads and writes them
    empty. **Fixed on this branch** (`jaxbFor()`).
-5. **Cheat Sheet Apply**: 25.10's FDL module had `getFDLController()`; 26.04's `FdlEditorController` doesn't. Needs a
-   new way to reach the FDL tree (likely `fdl.controller.FdlTreeController`).
+5. **Cheat Sheet Apply**: 25.10's FDL module had `getFDLController()`; 26.04's `FdlEditorController` doesn't, but keeps
+   an `FdlTreeController` (same `setValue(AttributeWrapper, Object)`) in its private field `fdlTreeController`.
+   **Fixed on this branch** (`fdlController()` in `esys/cheatsheet.js` uses whichever exists).
 
 ## Ways to get a script engine back
 | Option | What | Effort | Notes |

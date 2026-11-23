@@ -245,11 +245,23 @@
   }
 
   // ------------------------------------------------------------------ FDL editor access (E-Sys's own controller)
+  // The controller whose setValue(AttributeWrapper, value) sets a value like an edit by hand: the FDL module's
+  // FDLController up to E-Sys 25.x (getFDLController()); from 26.04 on, the FdlTreeController the FDL module
+  // (FdlEditorController) keeps in its private field fdlTreeController, with the same setValue.
   function fdlController() {
     var ctl = h.cls("com.bmw.esys.gui.control.EsysController");
     var inst = h.field(null, ctl, "instance").get(null);
     var mc = inst.getCachedModules().get("FDLEditor");
-    return mc ? mc.getFDLController() : null;
+    if (!mc) return null;
+    if (typeof mc.getFDLController === "function") return mc.getFDLController();
+    for (var c = mc.getClass(); c !== null; c = c.getSuperclass()) {
+      try {
+        var f = c.getDeclaredField("fdlTreeController");
+        f.setAccessible(true);
+        return f.get(mc);
+      } catch (eF) {}
+    }
+    return null;
   }
 
   function goTo(tree, node) {
@@ -567,5 +579,8 @@
     }
   }
 
-  return { open: open, tick: tick, view: function () { return split; } };   // view: for the section's selection mark
+  return { open: open, tick: tick, view: function () { return split; },   // view: for the section's selection mark
+           // for tests (esys/test_apply.js): Apply's own steps on whatever CAFD the FDL editor shows
+           test: { findTree: findTree, indexCaf: indexCaf, applyStep: applyStep, applyCustom: applyCustom,
+                   fdlController: fdlController, tvalueHex: tvalueHex } };
 });
