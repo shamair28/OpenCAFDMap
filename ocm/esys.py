@@ -112,7 +112,7 @@ STANDALONE_SHELL = "org.openjdk.nashorn.tools.Shell"
 
 def nashorn_jars():
     jars = sorted(os.path.join(NASHORN_DIR, f) for f in (os.listdir(NASHORN_DIR) if os.path.isdir(NASHORN_DIR) else [])
-                  if f.lower().endswith(".jar"))
+                  if f.lower().endswith(".jar") and not f.lower().endswith("-sources.jar"))
     return jars if any(os.path.basename(j).startswith("nashorn-core-") for j in jars) else []
 
 

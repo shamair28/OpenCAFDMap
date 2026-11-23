@@ -16,5 +16,6 @@ Maven Central's `.sha1` files. To update them, replace the files and this table 
 | asm-tree-7.3.1.jar | org.ow2.asm:asm-tree:7.3.1 | 52826 | 587ce54d243145b2e89598bfcea7823ded73be5d |
 | asm-util-7.3.1.jar | org.ow2.asm:asm-util:7.3.1 | 84817 | cac1bf54c2fb86671c357d281d1060fe5d50a0de |
 | asm-analysis-7.3.1.jar | org.ow2.asm:asm-analysis:7.3.1 | 33446 | 045dfd299ea0c17d534499c4f06417ceccfa2d02 |
+| src/nashorn-core-15.7-sources.jar | org.openjdk.nashorn:nashorn-core:15.7:sources | 1694683 | 62a74767e92e03875e3905f64a2f4c3617bf5997 |
 
-Licences and source code: [LICENSES.md](LICENSES.md) (Nashorn: GPL-2.0 with the Classpath Exception; ASM: BSD-3-Clause).
+The source jar is Nashorn's corresponding source (not on the classpath). Licences and source code: [LICENSES.md](LICENSES.md) (Nashorn: GPL-2.0 with the Classpath Exception; ASM: BSD-3-Clause).

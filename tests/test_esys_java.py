@@ -49,6 +49,26 @@ class Gate(unittest.TestCase):
             self.assertEqual(esys.script_runner("E"), (esys.STANDALONE_SHELL, JARS))
 
 
+class Jars(unittest.TestCase):
+    def test_source_jars_never_on_the_classpath(self):
+        tmp = tempfile.mkdtemp(prefix="ocm-jars-")
+        try:
+            for f in ("nashorn-core-15.7.jar", "asm-7.3.1.jar", "nashorn-core-15.7-sources.jar", "README.md"):
+                open(os.path.join(tmp, f), "w").close()
+            os.makedirs(os.path.join(tmp, "src"))
+            open(os.path.join(tmp, "src", "nashorn-core-15.7-sources.jar"), "w").close()
+            with mock.patch.object(esys, "NASHORN_DIR", tmp):
+                self.assertEqual([os.path.basename(j) for j in esys.nashorn_jars()],
+                                 ["asm-7.3.1.jar", "nashorn-core-15.7.jar"])
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_shipped_jars(self):
+        names = [os.path.basename(j) for j in esys.nashorn_jars()]
+        self.assertIn("nashorn-core-15.7.jar", names)
+        self.assertFalse(any(n.endswith("-sources.jar") for n in names))
+
+
 class Bat(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="ocm-bat-")

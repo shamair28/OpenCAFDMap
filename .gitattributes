@@ -13,3 +13,5 @@ definitions.json -text
 
 # third-party jars (lib/nashorn): byte-exact
 *.jar binary
+# third-party licence texts (lib/nashorn): kept exactly as published
+lib/nashorn/*.txt -text
