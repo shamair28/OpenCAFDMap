@@ -62,12 +62,22 @@ Don't edit `definitions.json`. After your pull request is merged, GitHub bumps t
 ## Code
 Bug fixes and improvements to the tools are welcome too. Keep the launcher-only rule: nothing may be installed into, patched into or written to the E-Sys folder.
 
-## Releases (maintainers)
-Tag a version and push the tag:
+## Branches and releases (maintainers)
+| Branch | What | Releases (tags) |
+|---|---|---|
+| `main` | OpenLauncher v3, and the **names for every version**: every install (v2 and v3) downloads `names\`, `definitions\`, `data\` from `main`. Name pull requests go here. | `v3.x.y`, GitHub's *latest* release |
+| `v3-testing` | the next v3 version and its tests; merge `main` into it regularly | `v3.x.y-rc.N`, pre-releases "(v3 preview)" |
+| `v2` | OpenLauncher v2 maintenance (fixes only) | `v2.x.y`, "(v2)", never *latest* |
+
+Keep the name `main`: installed launchers fetch name updates from it by name.
+
+Tag a version on its branch and push the tag:
 
 ```
-git tag v1.0.1
-git push origin v1.0.1
+git tag -a v3.0.1 -m "OpenLauncher v3.0.1"
+git push origin v3.0.1
 ```
 
-`.github/workflows/release.yml` checks the names and the manifest, builds `OpenCAFDMap.zip` (+ `.sha256`) with `installer/build_release.py`, and publishes a GitHub Release with `OpenLauncher-Setup.bat`. Setup always installs the *latest* release. Name-only changes don't need a release: OpenLauncher's **Check for updates** picks them up from `main`.
+`.github/workflows/release.yml` (the same file on every branch) checks the names and the manifest, builds `OpenCAFDMap.zip` (+ `.sha256`) with `installer/build_release.py`, and publishes the release for the tag's channel. Tag after the definitions bot's commit when names changed (`defs_manifest.py --check` must pass).
+
+**Which update an install gets** (`ocm/updater.py`): an install follows the newest release of its *own* major version, never GitHub's *latest* release, and setup is always given the exact tag. v2 stays on v2 until the user picks **Try OpenLauncher v3**; a v3 install follows v3; a v3 preview install also follows newer previews (**Try the preview** / **Back to stable**). Setup run by hand installs the latest release; on an existing v2 install it asks whether to upgrade to v3 or stay on v2, and the setup attached to v2 releases installs v2. OpenLauncher v2.3.10 and older (which take GitHub's latest release) are kept on v2 by setup itself. Name-only changes don't need a release: **Check for updates** picks them up from `main` for every version.

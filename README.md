@@ -2,7 +2,7 @@
 
 **OpenLauncher** is a free, open-source launcher for BMW E-Sys that brings readable coding names back to F- and G-chassis CAFDs, using your own psdzdata and a community-maintained list of names. **Open CAFD Map** is the name data behind it.
 
-**Downloads:** [![stable](https://img.shields.io/github/v/release/shamair28/OpenCAFDMap?label=stable)](https://github.com/shamair28/OpenCAFDMap/releases/latest) [![v3 release candidate](https://img.shields.io/github/v/release/shamair28/OpenCAFDMap?include_prereleases&sort=semver&label=v3%20RC&color=e5383b)](https://github.com/shamair28/OpenCAFDMap/releases?q=prerelease%3Atrue&expanded=true)
+**Downloads:** [![stable](https://img.shields.io/github/v/release/shamair28/OpenCAFDMap?label=stable)](https://github.com/shamair28/OpenCAFDMap/releases/latest) [![v3 preview](https://img.shields.io/github/v/release/shamair28/OpenCAFDMap?filter=v3.*&include_prereleases&sort=semver&label=v3%20preview&color=e5383b)](https://github.com/shamair28/OpenCAFDMap/releases?q=prerelease%3Atrue&expanded=true) [![v2](https://img.shields.io/github/v/release/shamair28/OpenCAFDMap?filter=v2.*&sort=semver&label=v2&color=6e7781)](https://github.com/shamair28/OpenCAFDMap/releases?q=%22%28v2%29%22&expanded=true)
 
 > **Documentation:** [shamair28.github.io/OpenCAFDMap-docs](https://shamair28.github.io/OpenCAFDMap-docs/)
 >
