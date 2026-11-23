@@ -32,6 +32,7 @@ from collections import Counter, defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config  # noqa: E402
+import versions  # noqa: E402
 from rules import FIXED, context_from_fp, crit_refs, readable, simplified  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -58,10 +59,29 @@ CREATE TABLE val(
   is_default INT, rule_id INT, label TEXT, label_source TEXT, used INT);
 CREATE TABLE crit(val INT PRIMARY KEY, cat INT, fa_codes TEXT, selector TEXT, label TEXT, short TEXT, source TEXT);
 CREATE TABLE ecu_cafd(ecu TEXT, cafd_id TEXT, source TEXT, PRIMARY KEY(ecu, cafd_id));
+-- ver_min / ver_max: the CAFD versions a row applies to (versions.key(), NULL = open end); both NULL = every version
 CREATE TABLE name_override(
   cafd_id TEXT NOT NULL, address TEXT NOT NULL, start INT, end INT, mask TEXT, value_hex TEXT,
-  name TEXT NOT NULL, comment TEXT, source TEXT NOT NULL);
+  name TEXT NOT NULL, comment TEXT, source TEXT NOT NULL, ver_min INT, ver_max INT);
 """
+OVERRIDE_INSERT = "INSERT INTO name_override VALUES(?,?,?,?,?,?,?,?,?,?,?)"
+
+
+def ensure_override_columns(con):
+    """A DB built before version-scoped names has a name_override table without ver_min / ver_max: add them."""
+    cols = {r[1] for r in con.execute("PRAGMA table_info(name_override)")}
+    for c in ("ver_min", "ver_max"):
+        if c not in cols:
+            con.execute(f"ALTER TABLE name_override ADD COLUMN {c} INT")
+
+
+def with_versions(row, spec, where=""):
+    """One 9-field name row -> 11-field rows, one per range in spec (versions.ranges); bad spec -> no rows."""
+    try:
+        return [tuple(row) + r for r in versions.ranges(spec)]
+    except ValueError as e:
+        print(f"  {where}: versions: {e} (row skipped)", file=sys.stderr)
+        return []
 
 INDEXES = """
 CREATE INDEX ix_cafd_id ON cafd(cafd_id);
@@ -399,28 +419,36 @@ def refresh_ecus(con, a):
           f"/{con.execute('SELECT count(DISTINCT cafd_id) FROM cafd').fetchone()[0]} CAFD ids")
 
 
-def load_user_names(path, source="community"):
-    """names TSV: cafd_id address start end mask value_hex name comment
-    (start/end/mask empty -> group name; value_hex empty -> function name)."""
+def load_user_names(path, source="community", scoped=False):
+    """names TSV: cafd_id address start end mask value_hex name comment [versions]
+    (start/end/mask empty -> group name; value_hex empty -> function name). The versions column (ocm\\versions.py)
+    is read only from version-scoped files (names\\versioned\\*.tsv, scoped=True), where it's required; rows are
+    (... source, ver_min, ver_max)."""
     rows = []
     if not path or not os.path.exists(path):
         return rows
     for ln, line in enumerate(open(path, encoding="utf-8"), 1):
         if line.startswith("#") or not line.strip():
             continue
-        f = [x.strip() for x in (line.rstrip("\r\n").split("\t") + [""] * 8)[:8]]
+        f = [x.strip() for x in (line.rstrip("\r\n").split("\t") + [""] * 9)[:9]]
         if f[0].lower() in ("cafd_id", "cafd"):
             continue
-        cid, addr, start, end, mask, vhex, name, comment = f
+        cid, addr, start, end, mask, vhex, name, comment, vers = f
+        where = f"{os.path.basename(path)}:{ln}"
         if not (cid and addr and (name or comment)):
-            print(f"  {os.path.basename(path)}:{ln}: need cafd_id, address and a name or comment", file=sys.stderr)
+            print(f"  {where}: need cafd_id, address and a name or comment", file=sys.stderr)
             continue
         if not name and (vhex or not start):
-            print(f"  {os.path.basename(path)}:{ln}: comment-only rows must be function rows", file=sys.stderr)
+            print(f"  {where}: comment-only rows must be function rows", file=sys.stderr)
             continue
-        rows.append((cid.upper().zfill(8), addr.upper(), int(start) if start else None,
-                     int(end) if end else (int(start) if start else None), mask or None,
-                     vhex.upper() or None, name, comment or None, source))
+        if scoped and not vers:
+            print(f"  {where}: version-scoped file without versions (row skipped; every-version names go in "
+                  "names\\*.tsv)", file=sys.stderr)
+            continue
+        rows += with_versions((cid.upper().zfill(8), addr.upper(), int(start) if start else None,
+                               int(end) if end else (int(start) if start else None), mask or None,
+                               vhex.upper() or None, name, comment or None, source),
+                              vers if scoped else "", where)
     return rows
 
 
@@ -504,15 +532,22 @@ def norm_mask(m):
 
 def load_definition_xmls(paths):
     """Names from contributed CafdDefinition XMLs (definitions\\**\\*.xml): group, function and value
-    names keyed version-independently like the names files. Placeholders and derived labels
+    names keyed like the names files: for every version, or for the CAFD versions in versions="..." on
+    <CafdDefinition> (ocm\\versions.py). Placeholders and derived labels
     (Group_3000, PfFesMaster_9_9_255, 'wert_02 [SA5AC]') are skipped; 'wert_02 aktiv [SA5AC]' -> 'aktiv'."""
-    rows = []
+    out = []
     for p in paths:
         try:
             root = ET.parse(p).getroot()
         except ET.ParseError as e:
             print(f"  skip {p}: {e}", file=sys.stderr)
             continue
+        try:
+            scope = versions.ranges(root.get("versions") or "")
+        except ValueError as e:
+            print(f"  skip {p}: versions: {e}", file=sys.stderr)
+            continue
+        rows = []
         cid = (root.get("cafdId") or "").upper().zfill(8)
         src_note = root.get("source") or root.get("author") or os.path.basename(p)
         for g in root.iter("Group"):
@@ -545,7 +580,8 @@ def load_definition_xmls(paths):
                         lab = (m.group(1) or "").strip()
                     if lab:
                         rows.append((cid, gid, st, en, mask, code, lab, f"[{src_note}]", "contributed"))
-    return rows
+        out += [r + rg for r in rows for rg in scope]
+    return out
 
 
 def load_all_names(a):
@@ -553,6 +589,8 @@ def load_all_names(a):
     for p in a.names:
         src = "legacy" if os.path.basename(p).lower().startswith("legacy_") else "community"
         rows += load_user_names(p, src)
+    for p in getattr(a, "versioned_names", None) or []:
+        rows += load_user_names(p, "community", scoped=True)
     rows += load_definition_xmls(a.definitions)
     for p in a.sheet_names:
         rows += load_user_names(p, "sheet")
@@ -695,11 +733,19 @@ def apply_untrimmed_fields(con, fidx):
     con.executemany("UPDATE val SET label=?, label_source='untrimmed-pos' WHERE pk=?", vupd)
 
 
+VER_MATCH = ("(o.ver_min IS NULL OR c.main * 1000000 + c.sub * 1000 + c.patch >= o.ver_min) AND "
+             "(o.ver_max IS NULL OR c.main * 1000000 + c.sub * 1000 + c.patch <= o.ver_max)")
+SCOPED_FIRST = "(o.ver_min IS NULL AND o.ver_max IS NULL)"     # 0 for a version-scoped row: it sorts first
+
+
 def apply_overrides(con):
-    r"""Resolve name_override rows (version independent keys).
-    Priority: local (my_names.tsv) > community (names\*.tsv) > contributed (definition XMLs) >
-    sheet (names\cheatsheet\*.tsv) > cheatsheet (imported sheets) > legacy (names\legacy_*.tsv)."""
-    con.executescript(("""
+    r"""Resolve name_override rows. A row applies to every version of its CAFD, or only to the versions in its
+    range (ver_min / ver_max: names\versioned\*.tsv, versions="..." on contributed definitions).
+    Priority: local (my_names.tsv) > community (names\*.tsv, names\versioned\*.tsv) > contributed (definition
+    XMLs) > sheet (names\cheatsheet\*.tsv) > cheatsheet (imported sheets) > legacy (names\legacy_*.tsv); within a
+    source, a version-scoped row beats an every-version one."""
+    ensure_override_columns(con)
+    sql = ("""
     UPDATE datagroup SET (name, name_source) = (SELECT o.name, o.source FROM name_override o JOIN cafd c ON c.cafd_id=o.cafd_id
          WHERE c.pk=datagroup.cafd_pk AND o.address=datagroup.address AND o.start IS NULL
          ORDER BY PRIO LIMIT 1)
@@ -736,7 +782,12 @@ def apply_overrides(con):
        AND EXISTS (SELECT 1 FROM name_override o JOIN func f ON f.pk=val.func_pk JOIN cafd c ON c.pk=f.cafd_pk
          WHERE c.cafd_id=o.cafd_id AND o.address=f.address AND o.start=f.start AND o.end=f.end
            AND o.mask=f.mask AND o.value_hex=val.hex);
-    """).replace("PRIO", PRIO))
+    """)
+    sql = (sql.replace("c.cafd_id=o.cafd_id", "c.cafd_id=o.cafd_id AND VER_MATCH")
+              .replace("o.cafd_id=c.cafd_id", "o.cafd_id=c.cafd_id AND VER_MATCH")
+              .replace("ORDER BY PRIO", "ORDER BY PRIO, SCOPED_FIRST"))
+    con.executescript(sql.replace("VER_MATCH", VER_MATCH).replace("SCOPED_FIRST", SCOPED_FIRST)
+                         .replace("PRIO", PRIO))
     n = con.execute("SELECT count(*) FROM name_override").fetchone()[0]
     print(f"  {n} name overrides applied")
     bmw_placeholders(con)
@@ -819,6 +870,8 @@ def parse_args(argv=None):
     ap.add_argument("--curated", default=os.path.join(config.DATA, "fp_crits_curated.tsv"))
     ap.add_argument("--fpdef", default=None, help="optional curated FP definition XML (fallback crit labels)")
     ap.add_argument("--names", nargs="*", default=P.name_files(), help="community name files (names\\*.tsv)")
+    ap.add_argument("--versioned-names", nargs="*", default=P.versioned_name_files(),
+                    help="version-scoped community name files (names\\versioned\\*.tsv)")
     ap.add_argument("--definitions", nargs="*", default=P.contributed_xmls("definition"),
                     help="contributed CafdDefinition XMLs (definitions/**/*.xml)")
     ap.add_argument("--sheet-names", nargs="*", default=P.sheet_name_files(),
@@ -854,8 +907,9 @@ def main():
         if not os.path.exists(a.out):
             sys.exit(f"no DB at {a.out}: run a full build first")
         con = sqlite3.connect(a.out)
+        ensure_override_columns(con)
         con.execute("DELETE FROM name_override")
-        con.executemany("INSERT INTO name_override VALUES(?,?,?,?,?,?,?,?,?)", overrides)
+        con.executemany(OVERRIDE_INSERT, overrides)
         ctx = load_fp(a.context) if a.context and a.context != "none" else None
         con.execute("INSERT OR REPLACE INTO meta VALUES('context', ?)", (a.context or "none",))
         refresh_ecus(con, a)
@@ -882,7 +936,7 @@ def main():
 
     ingest(con, files, a.series)
     con.executescript(INDEXES)
-    con.executemany("INSERT INTO name_override VALUES(?,?,?,?,?,?,?,?,?)", overrides)
+    con.executemany(OVERRIDE_INSERT, overrides)
     ctx = load_fp(a.context) if a.context and a.context != "none" else None
     con.execute("INSERT OR REPLACE INTO meta VALUES('context', ?)", (a.context or "none",))
     refresh_ecus(con, a)

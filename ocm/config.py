@@ -158,6 +158,11 @@ class Paths:
         """Community name files: names\\*.tsv (legacy_*.tsv rank below cheat sheets)."""
         return sorted(glob.glob(os.path.join(NAMES, "*.tsv")))
 
+    def versioned_name_files(self):
+        """names\\versioned\\*.tsv: community names for some CAFD versions only (a 9th column, versions). A
+        separate folder, so launchers that don't know the column never apply these to every version."""
+        return sorted(glob.glob(os.path.join(NAMES, "versioned", "*.tsv")))
+
     def sheet_name_files(self):
         """names\\cheatsheet\\*.tsv: names taken from cheat sheets whose files can't be shipped."""
         return sorted(glob.glob(os.path.join(NAMES, "cheatsheet", "*.tsv")))

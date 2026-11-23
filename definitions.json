@@ -1,6 +1,6 @@
 {
- "version": "2026.11.23.3",
- "date": "2026-11-23T03:47:11Z",
+ "version": "2026.11.23.4",
+ "date": "2026-11-23T22:36:19Z",
  "files": {
   "data/contexts/G20_LCI_ECE_320i_11FF.xml": "f621bfff2f28901354255ca0aa8813ae2d19cf7c1374d978c8b16aa5b2cfe5ee",
   "data/contexts/G20_LCI_US_330ixDrive_89FF.xml": "3bd5e3d83ecbd0503f18f3c57680cf1643e38f1bf9341c0bed12877df973592a",
@@ -22,7 +22,7 @@
   "data/fp_crits_verified.tsv": "cd75577aa1ddfb88a74123ae011e457dedd7d35a5edb2152932e97e9bc356f87",
   "data/sa_titles.tsv": "cdf9307ba4f7ef2871bb863a2a8bd31e441679ae86e3ec9ac0b5e8095965dd3e",
   "definitions/FLM2/FLM2_000043AF_G20_LCI_BaseLED_Welcome.xml": "f991ac136a3f3902a3d5daa361a279beabc1af84d831d2de06d5b9c086faf94c",
-  "definitions/README.md": "96b1552324b6188e2a59926f4b8d882e22b7e08bd430a41a110220ae1b27901e",
+  "definitions/README.md": "af3e5721f1b15d97f0efcab2d7ee7f98ac1e102c397c4ec53c0547445e7073bc",
   "definitions/community-cheatsheets/Almaretto.xml": "abe97192d268b221aea45ee81a5602600befd1d55026dca444081626a6c1c3f2",
   "definitions/community-cheatsheets/Botho.xml": "bc2914abb9c5f86b4e8ea79055ff785cd68cc4d5266018219180057464f6c2bb",
   "definitions/community-cheatsheets/Bundang_Thunder.xml": "c84d44c28d474458f91ed1abbf25707e2644683f8f1ae12eeab301b40c86e741",
@@ -368,9 +368,10 @@
   "names/FZD2.tsv": "0589c4c26ab74e11e15e520cca186438b1f88c947d15afec1bf243e1fa76e2ee",
   "names/HU_MGU.tsv": "2630a6506e06635b70e66dd598a11cd4ecefee2427f99ab69748f657343a7e29",
   "names/LICENSE": "03a08915429460f4f4af94ed73849e1adab9ebf94d2d56e7530c9d7ee0a0612d",
-  "names/README.md": "27f5a816e092c015e9e5b18be4f85f515ec820d2862a762b17bee837215d88e3",
+  "names/README.md": "37f5c655d8401cdf95c61163a8791aeadc3c764568271d511022ffc7e3440765",
   "names/cheatsheet/README.md": "108f633b4fe2665e2571254977776b960f59ae80f15179843e8305b679774fcc",
   "names/cheatsheet/fdl_names.tsv": "236d8e6ec0db4a8153d7f79c150e63081022bb9c461c78006db321625b183ecb",
-  "names/legacy_FLM2.tsv": "e85a8655013cc6bfeef6d9d34ceccd6e4cc0b84ebbd053897571af4913bdbece"
+  "names/legacy_FLM2.tsv": "e85a8655013cc6bfeef6d9d34ceccd6e4cc0b84ebbd053897571af4913bdbece",
+  "names/versioned/README.md": "69ce0864246243b9f7bfa05a115ae813c89036ca52df0b3919b8f31c09984a29"
  }
 }

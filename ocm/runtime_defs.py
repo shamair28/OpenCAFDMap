@@ -68,9 +68,9 @@ def build(P, a, files, write_fp=False):
     if sheets:
         crow, _ = cheat_import.collect(con, sheets)
         # same shape as load_user_names(names_cheats.tsv): empty value_hex / comment -> None
-        rows += [(cid, addr, st, en, mask or None, vhex or None, name, comment or None, "cheatsheet")
+        rows += [(cid, addr, st, en, mask or None, vhex or None, name, comment or None, "cheatsheet", None, None)
                  for cid, addr, st, en, mask, vhex, name, comment in crow]
-    con.executemany("INSERT INTO name_override VALUES(?,?,?,?,?,?,?,?,?)", rows)
+    con.executemany(B.OVERRIDE_INSERT, rows)
     ctx = B.load_fp(a.context) if a.context and a.context != "none" else None
     B.refresh_ecus(con, a)
     B.relabel(con, crits, a.series, ctx, a.cache)

@@ -199,6 +199,7 @@ BCACHE = os.path.join(_P.workspace, "cafd_cache", "backups")
 STAMP = BDB + ".json"
 # what the DB is built from besides the decrypted CAFDs: a newer file here means the DB is rebuilt (5 s)
 INPUTS = [config.NAMES, config.CONTRIB, config.DATA, os.path.join(HERE, "build_defdb.py"), os.path.join(HERE, "rules.py"),
+          os.path.join(HERE, "versions.py"),
           _P.my_names, _P.cheat_names]
 
 

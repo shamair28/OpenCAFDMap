@@ -20,7 +20,7 @@ The format the agent reads, used by `export_defs.py` and older hand-made definit
   - `CAFD_<id>_<main>_<sub>_<patch>.xml` for one software version.
   - `CAFD_<id>.xml` for a file that applies to every version. With no exact match, functions are matched on start/end bytes.
 - **How it's used:**
-  - *Names*: every real group, function and value name in it is imported for all versions that have the same address, bytes and mask. Placeholders like `Group_3000` / `PfFesMaster_9_9_255` and derived labels like `wert_02 [SA5AC]` are ignored. `wert_02 aktiv [SA5AC]` gives the value name `aktiv`.
+  - *Names*: every real group, function and value name in it is imported for all versions that have the same address, bytes and mask, or only for the CAFD versions in an optional `versions="..."` on `<CafdDefinition>` (same ranges as `names\versioned\`: `062-`, `-052`, `052-061`, `062_010_106`; see [CONTRIBUTING.md](../CONTRIBUTING.md#names-for-some-cafd-versions-only)). Placeholders like `Group_3000` / `PfFesMaster_9_9_255` and derived labels like `wert_02 [SA5AC]` are ignored. `wert_02 aktiv [SA5AC]` gives the value name `aktiv`.
   - *Fallback*: if someone's psdzdata doesn't have that CAFD version, E-Sys uses the contributed file directly.
 - **Priority:** names files (`names\*.tsv`) > BMW untrimmed names (`untrimmed\`) > contributed definitions > `names\cheatsheet\*.tsv` > cheat sheets > legacy names. Your private `my_names.tsv` always wins.
 - **Making one:**
