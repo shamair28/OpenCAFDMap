@@ -5,8 +5,8 @@ it with OpenJDK's standalone Nashorn instead (`org.openjdk.nashorn.tools.Shell`,
 E-Sys on Java 8-14 keeps using the JRE's own Nashorn; this folder isn't used there. Java 15+ is experimental: OpenLauncher only
 starts it with Settings > Options > "Experimental: E-Sys 26.x (Java 17)" on.
 
-**The jars are not in git yet** (shipping them is still to be decided). Put these files here, from Maven Central
-(`https://repo1.maven.org/maven2/`), and check their SHA-1 against Maven Central's `.sha1` files:
+The jars below are shipped here unchanged from Maven Central (`https://repo1.maven.org/maven2/`); their SHA-1s match
+Maven Central's `.sha1` files. To update them, replace the files and this table together.
 
 | File | Maven coordinates | Bytes | SHA-1 |
 |---|---|---|---|
@@ -17,4 +17,4 @@ starts it with Settings > Options > "Experimental: E-Sys 26.x (Java 17)" on.
 | asm-util-7.3.1.jar | org.ow2.asm:asm-util:7.3.1 | 84817 | cac1bf54c2fb86671c357d281d1060fe5d50a0de |
 | asm-analysis-7.3.1.jar | org.ow2.asm:asm-analysis:7.3.1 | 33446 | 045dfd299ea0c17d534499c4f06417ceccfa2d02 |
 
-Licences: Nashorn is GPL-2.0 with the Classpath Exception (like the JDK); ASM is BSD-3-Clause.
+Licences and source code: [LICENSES.md](LICENSES.md) (Nashorn: GPL-2.0 with the Classpath Exception; ASM: BSD-3-Clause).

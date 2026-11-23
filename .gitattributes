@@ -10,3 +10,6 @@ definitions.json -text
 *.py text eol=lf
 *.js text eol=lf
 *.md text eol=lf
+
+# third-party jars (lib/nashorn): byte-exact
+*.jar binary
