@@ -2,7 +2,12 @@
 
 Working notes for the `java-17-compat` branch (based on `v3-testing`).
 
-## Status (2026-11-23): option A works
+## Status (2026-11-23): option A works, as an experimental setting
+**Settings > Options > "Experimental: E-Sys 26.x (Java 17)"** (`experimental_java17` in config.json, off by default).
+Off: an E-Sys on Java 15+ isn't started (also not for Build definitions), and the message names the setting. On:
+OpenLauncher starts it with the standalone Nashorn, and the Cheat Sheet / FA Helper Apply buttons are allowed there
+(the opt-in replaces "Try anyway" for these versions; `-Docm.experimental=1`). E-Sys on Java 8-14 is unaffected.
+
 With OpenJDK's standalone Nashorn 15.7 (`lib/nashorn/`, see its README) on E-Sys 26.04.02:
 - **E-Sys starts through OpenLauncher**; the agent loads, and the OpenLauncher section shows Compare NCD, Cheat Sheet,
   FA Helper and DTC.
@@ -13,9 +18,8 @@ With OpenJDK's standalone Nashorn 15.7 (`lib/nashorn/`, see its README) on E-Sys
   the agent labels the live tree, and Apply picks a listed value and sets a custom value through E-Sys's own edit path
   (26.04: `FdlTreeController`, 25.10: `FDLController`). Passes on 26.04.02 and 25.10.03.
 - **E-Sys 25.10** (Java 11) still uses the JRE's own Nashorn; same results as before.
-- **Not checked yet**: the tools' views on screen (a screen overlay on the test PC hid them), FA/SVT backup and DTC
-  against a car. Cheat Sheet Apply and FA Helper Apply stay behind "Try anyway" on 26.04 until it's added to
-  `TESTED_ESYS` (`ocm/esys.py`).
+- **Not checked yet**: the tools' views on screen (a screen overlay on the test PC hid them), FA Helper Apply, FA/SVT
+  backup and DTC against a car. 26.x is not in `TESTED_ESYS` (`ocm/esys.py`); the experimental setting is the opt-in.
 
 Changes on the branch: `ocm/esys.py` (E-Sys.bat module options; `script_runner` picks the standalone Nashorn on Java
 15+ and passes `--add-opens` to headless scripts), `esys/*.js` (moved GUI classes looked up under both names;

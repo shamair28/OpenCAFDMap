@@ -20,7 +20,8 @@ def main():
     esys_dir, ncd = sys.argv[1], os.path.abspath(sys.argv[2])
     cfg = config.load()
     cfg["esys_dir"] = esys_dir
-    cfg["try_untested_esys"] = True                 # Apply is gated on untested E-Sys versions
+    cfg["experimental_java17"] = True               # E-Sys on Java 17 (26.x) is experimental: opt in (Apply included)
+    cfg["try_untested_esys"] = False                # the opt-in alone must enable Apply there
     spec = esys.launch_spec(esys_dir)
     cmd = esys.launch_command(cfg, spec)
     out = os.path.join(tempfile.gettempdir(), "ocm-test-apply.txt")

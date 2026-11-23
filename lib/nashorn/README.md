@@ -2,7 +2,8 @@
 
 Java removed its built-in JavaScript engine (Nashorn) in Java 15. E-Sys 26.04 runs on Java 17, so OpenLauncher starts
 it with OpenJDK's standalone Nashorn instead (`org.openjdk.nashorn.tools.Shell`, see `ocm/esys.py script_runner`).
-E-Sys on Java 8-14 keeps using the JRE's own Nashorn; this folder isn't used there.
+E-Sys on Java 8-14 keeps using the JRE's own Nashorn; this folder isn't used there. Java 15+ is experimental: OpenLauncher only
+starts it with Settings > Options > "Experimental: E-Sys 26.x (Java 17)" on.
 
 **The jars are not in git yet** (shipping them is still to be decided). Put these files here, from Maven Central
 (`https://repo1.maven.org/maven2/`), and check their SHA-1 against Maven Central's `.sha1` files:

@@ -478,10 +478,13 @@
   var TESTED = String(System.getProperty("ocm.testedEsys") || "25.").split(",").some(function (p) {
     return p && ESYS_VER.indexOf(p) === 0;
   });
-  var TRY = String(System.getProperty("ocm.tryUntested")) === "1";
+  // an experimental Java 17 E-Sys (OpenLauncher > Settings > Experimental: E-Sys 26.x) was opted into, Apply included
+  var EXPERIMENTAL = String(System.getProperty("ocm.experimental")) === "1";
+  var TRY = String(System.getProperty("ocm.tryUntested")) === "1" || EXPERIMENTAL;
   var cheat = null;
   if (!TESTED) log("Cheat Sheet window on untested E-Sys " + (ESYS_VER || "(unknown version)") + ": Apply "
-                   + (TRY ? "enabled (Try anyway)" : "off (enable Try anyway in OpenLauncher)"));
+                   + (EXPERIMENTAL ? "enabled (experimental E-Sys 26.x support)"
+                      : TRY ? "enabled (Try anyway)" : "off (enable Try anyway in OpenLauncher)"));
   try {
     var CONTRIB = System.getProperty("ocm.contrib") ? String(System.getProperty("ocm.contrib")) : null;
     cheat = load(new File(new File(String(System.getProperty("ocm.agent"))).getParentFile(), "cheatsheet.js").getPath())({

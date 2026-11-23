@@ -123,12 +123,26 @@ def script_runner(esys_dir):
     return STANDALONE_SHELL, nashorn_jars()
 
 
-def check_java(esys_dir):
+EXPERIMENTAL_LABEL = "Experimental: E-Sys 26.x (Java 17)"
+
+
+def experimental(cfg=None):
+    """Settings > Options > Experimental: E-Sys 26.x (Java 17)."""
+    return bool((cfg if cfg is not None else config.load()).get("experimental_java17"))
+
+
+def check_java(esys_dir, cfg=None):
+    """The E-Sys's Java major version, or SystemExit with the reason it can't be started. Java 15+ (no Nashorn of
+    its own) is experimental: only with the setting on and the standalone Nashorn in lib\\nashorn."""
     j = java_major(esys_dir)
-    if j > NASHORN_LAST and not nashorn_jars():
-        raise SystemExit(f"This E-Sys ({esys_version(esys_dir) or 'unknown version'}) uses Java {j}, which has no "
-                         f"JavaScript runner of its own (Java's Nashorn ends with Java {NASHORN_LAST}), and the "
-                         f"standalone Nashorn isn't in {NASHORN_DIR}.")
+    if j > NASHORN_LAST:
+        ver = esys_version(esys_dir) or "unknown version"
+        if not experimental(cfg):
+            raise SystemExit(f"This E-Sys ({ver}) uses Java {j}. OpenLauncher's support for it is experimental: turn "
+                             f"on Settings > Options > \"{EXPERIMENTAL_LABEL}\" to try it.")
+        if not nashorn_jars():
+            raise SystemExit(f"This E-Sys ({ver}) uses Java {j}, which has no JavaScript runner of its own (Java's "
+                             f"Nashorn ends with Java {NASHORN_LAST}), and the standalone Nashorn isn't in {NASHORN_DIR}.")
     return j
 
 
@@ -387,7 +401,7 @@ def vm_options(cfg, spec):
 
 def launch_command(cfg, spec=None):
     d = check_esys(cfg)
-    check_java(d)
+    check_java(d, cfg)
     spec = spec or launch_spec(d)
     p = config.Paths(cfg)
     # no build needed: CAFDs without a definition file get one on demand (ocm/runtime_defs.py)
@@ -412,6 +426,8 @@ def launch_command(cfg, spec=None):
         f"-Docm.esysVersion={esys_version(d)}",
         f"-Docm.testedEsys={','.join(TESTED_ESYS)}",
         f"-Docm.tryUntested={'1' if cfg.get('try_untested_esys') else '0'}",
+        # experimental Java 15+ E-Sys (check_java let it through): the opt-in also allows the Apply buttons
+        f"-Docm.experimental={'1' if java_major(d) > NASHORN_LAST else '0'}",
         f"-Docm.esysLanguage={esys_language_value(cfg.get('esys_language'))}",  # E-Sys's language, "" = its own  # Cheat Sheet Apply on untested versions
     ] + nashorn_options(d)
     if option(cfg, "launch_labels") and option(cfg, "launch_on_demand"):   # CAFDs without a definition get one on demand
@@ -444,6 +460,8 @@ def launch(cfg=None):
              f"# E-Sys {esys_version(d) or '?'} in {d}, Java {java_major(d) or '?'}\n"
              f"# launch recipe: {spec['source']}; main class {spec['main']}; working folder {spec['cwd']}\n"
              + (f"# options in E-Sys.bat not used: {' '.join(spec['dropped'])}\n" if spec["dropped"] else "")
+             + (f"# {EXPERIMENTAL_LABEL}: on (standalone Nashorn from {NASHORN_DIR})\n"
+                if java_major(d) > NASHORN_LAST else "")
              + (f"# launch options off: {', '.join(off)}\n" if off else "")
              + (f"# UI scale set in OpenLauncher: {ui_scale_value(cfg.get('esys_ui_scale'))}\n"
                 if ui_scale_value(cfg.get("esys_ui_scale")) else "")
@@ -473,7 +491,7 @@ def run_script(script, args, cfg=None, log=None, on_line=None):
     on_line (progress) and the log; PsdZ's very noisy stdout is discarded. Returns the exit code."""
     cfg = cfg or config.load()
     d = check_esys(cfg)
-    check_java(d)
+    check_java(d, cfg)
     spec = launch_spec(d)
     java = os.path.join(d, "jre", "bin", "java.exe")
     dopts = [o for o in spec["vm_options"] if o.startswith("-D")]   # e.g. java.endorsed.dirs on E-Sys 3.x

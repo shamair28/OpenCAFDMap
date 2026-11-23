@@ -420,6 +420,13 @@ class OpenLauncher(tk.Tk):
         ttk.Checkbutton(o, text="Try anyway: allow Cheat Sheet Apply on E-Sys versions OpenLauncher wasn't tested "
                                 "with (tested: 25.x)", variable=self.try_untested,
                         style="Card.TCheckbutton").pack(anchor="w", pady=2)
+        self.experimental17 = tk.BooleanVar(value=bool(self.cfg.get("experimental_java17")))
+        ttk.Checkbutton(o, text=esys.EXPERIMENTAL_LABEL, variable=self.experimental17,
+                        style="Card.TCheckbutton").pack(anchor="w", pady=(2, 0))
+        ttk.Label(o, text="Starts E-Sys versions on Java 17 with the standalone Nashorn (lib\\nashorn), Apply buttons "
+                          "included. Tested on 26.04: labels, on-demand definitions, Cheat Sheet Apply, Build definitions. "
+                          "Not yet: FA Helper, DTC and FA/SVT backup with a car.", style="CardMuted.TLabel",
+                  wraplength=620, justify="left").pack(anchor="w", padx=(22, 0), pady=(0, 4))
         # under the options, not beside them: on a narrow window it would cut their text off
         ttk.Button(o, text="Save settings", style="Accent.TButton", command=self.save).pack(anchor="e", pady=(10, 0))
 
@@ -473,6 +480,7 @@ class OpenLauncher(tk.Tk):
         self.cfg["esys_language"] = esys.esys_language_value(self.cfg["esys_language"])
         self.cfg["export_all_versions"] = self.all_versions.get()
         self.cfg["try_untested_esys"] = self.try_untested.get()
+        self.cfg["experimental_java17"] = self.experimental17.get()
         config.save(self.cfg)
         self.cfg = config.load()
         self.vars["workspace"].set(self.cfg["workspace"])
