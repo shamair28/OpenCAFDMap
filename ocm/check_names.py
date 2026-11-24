@@ -156,6 +156,40 @@ def check_untrimmed(path, errors, warnings):
     return n
 
 
+def check_byindex(path, errors):
+    r"""definitions\untrimmed\transferred\raw\byindex\<CAFD id>.tsv.gz (ocm\untrimmed.py pack-esysplus):
+    kind address reference function_index value_hex name; kinds H (group), N (function), P (value), A (value
+    the reference has no name for)."""
+    import gzip
+    rel = relpath(path)
+    if not re.fullmatch(r"[0-9A-F]{8}\.tsv\.gz", os.path.basename(path)):
+        errors.append(f"{rel}: name it <8 upper-case hex CAFD id>.tsv.gz")
+        return 0
+    n = 0
+    try:
+        for ln, line in enumerate(gzip.open(path, "rt", encoding="utf-8"), 1):
+            if line.startswith("#") or not line.strip():
+                continue
+            n += 1
+            kind, addr, ref, idx, vhex, name = (line.rstrip("\r\n").split("\t") + [""] * 6)[:6]
+            where = f"{rel}:{ln}"
+            if kind not in ("H", "N", "P", "A") or not ADDR.match(addr) or not re.fullmatch(r"\d{3}_\d{3}_\d{3}", ref):
+                errors.append(f"{where}: expected H/N/P/A, a 4-hex address and a reference like 116_064_000")
+            elif kind != "H" and not idx.isdigit():
+                errors.append(f"{where}: function_index must be a number")
+            elif kind in ("P", "A") and not HEXV.match(vhex):
+                errors.append(f"{where}: value_hex must be upper-case hex bytes")
+            elif kind != "A" and not name:
+                errors.append(f"{where}: missing name")
+            elif VIN.search(name):
+                errors.append(f"{where}: contains something that looks like a VIN: remove it")
+            if len(errors) > 50:
+                break
+    except (OSError, EOFError) as e:
+        errors.append(f"{rel}: not a readable gzip file ({e})")
+    return n
+
+
 def check_xml(path, errors, warnings):
     """definitions\\**\\*.xml: a CafdDefinition (our definition format) or an FDL cheat sheet."""
     import xml.etree.ElementTree as ET
@@ -262,11 +296,17 @@ def main():
                         + sorted(glob.glob(os.path.join(config.CONTRIB, "untrimmed", "*.tsv.gz")))
                         + sorted(glob.glob(os.path.join(config.CONTRIB, "untrimmed", "transferred", "*.tsv.gz")))
                         + sorted(glob.glob(os.path.join(config.CONTRIB, "untrimmed", "transferred", "rejected",
-                                                        "*.tsv.gz"))))
+                                                        "*.tsv.gz")))
+                        + sorted(glob.glob(os.path.join(config.CONTRIB, "untrimmed", "transferred", "raw",
+                                                        "*.tsv.gz")))
+                        + sorted(glob.glob(os.path.join(config.CONTRIB, "untrimmed", "transferred", "raw",
+                                                        "byindex", "*.tsv.gz"))))
     errors, warnings, keys, scoped_keys = [], [], {}, {}
     n_xml = n_xml_fn = n_untr = 0
     for p in files:
-        if p.lower().endswith(".tsv.gz"):
+        if p.lower().endswith(".tsv.gz") and os.path.basename(os.path.dirname(p)).lower() == "byindex":
+            n_untr += check_byindex(p, errors)
+        elif p.lower().endswith(".tsv.gz"):
             n_untr += check_untrimmed(p, errors, warnings)
         elif p.lower().endswith(".xml"):
             n_xml += 1

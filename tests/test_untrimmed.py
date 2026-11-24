@@ -5,6 +5,7 @@ byte 4 mask 0xFE split into 0x02 + 0xFC; the other fields keep their names).
     python -m unittest discover -s tests -v
 
 Synthetic package and DB only: no psdzdata, no decrypted CAFDs."""
+import glob
 import os
 import shutil
 import sqlite3
@@ -198,11 +199,12 @@ class Realign(unittest.TestCase):
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="ocm-realign-")
-        self.dirs = {n: getattr(U, n) for n in ("PACK_DIR", "TRANSFERRED_DIR", "REJECTED_DIR", "RAW_DIR")}
+        self.dirs = {n: getattr(U, n) for n in ("PACK_DIR", "TRANSFERRED_DIR", "REJECTED_DIR", "RAW_DIR", "BYINDEX_DIR")}
         U.PACK_DIR = self.tmp
         U.TRANSFERRED_DIR = os.path.join(self.tmp, "transferred")
         U.REJECTED_DIR = os.path.join(U.TRANSFERRED_DIR, "rejected")
         U.RAW_DIR = os.path.join(U.TRANSFERRED_DIR, "raw")
+        U.BYINDEX_DIR = os.path.join(U.RAW_DIR, "byindex")
         names = [n for _, _, n in self.REF]
         raw = {}
         for lay in (self.REF, self.NEW):            # E-Sys Plus's dump of both: names by index
@@ -228,19 +230,50 @@ class Realign(unittest.TestCase):
     def test_names_go_back_on_their_fields(self):
         quiet(U.realign_cid, CID, self.layouts)
         g, _ = U.load(CID, U.TRANSFERRED_DIR)
-        (key, e), = g.items()
-        self.assertEqual(key[1], U.layout_hash([f[0] for f in self.REF]))     # the reference's own layout
-        self.assertEqual(e["S"], "150_130_000")
-        self.assertEqual(e["F"][(1, 1, "00011111b")], "SPEED_MIN")
+        ref = g[("3000", U.layout_hash([f[0] for f in self.REF]))]
+        new = g[("3000", U.layout_hash([f[0] for f in self.NEW]))]
+        self.assertEqual(ref["S"], "150_130_000")                    # the reference's own layout
+        self.assertEqual(ref["F"], {k: n for k, _c, n in self.REF})
+        # the newer version, decided field by field: SPEED_MIN stays on its 5-bit field (E-Sys Plus put it on the
+        # new 3-bit one), the new field gets nothing, A_FLAG gets nothing (a field was inserted next to it), B_FLAG
+        # keeps its name (nothing changed between it and SPEED_MAX)
+        self.assertEqual(new["F"], {(1, 1, "00011111b"): "SPEED_MIN", (2, 2, "00111111b"): "SPEED_MAX",
+                                    (3, 3, "00000001b"): "B_FLAG"})
+        self.assertEqual(new["V"][(1, 1, "00011111b", "03")], "3_kmh")
+        # versions not in the DBs: only multi-value fields, by field
         idx = U.transfer_index(g)
-        # the newer version: SPEED_MIN stays on its 5-bit field (E-Sys Plus put it on the new 3-bit one)
         self.assertEqual(U.transfer_match(idx, "3000", 1, 1, "00011111b", {"00", "03", "06"})[0], "SPEED_MIN")
         self.assertIsNone(U.transfer_match(idx, "3000", 0, 0, "00001110b", {"00", "01", "02"}))
-        # flags need the same rule print
-        same = U.rule_print([("00", ""), ("01", "")])
-        self.assertEqual(U.transfer_match(idx, "3000", 3, 3, "00000001b", {"00", "01"}, same)[0], "B_FLAG")
-        self.assertIsNone(U.transfer_match(idx, "3000", 3, 3, "00000001b", {"00", "01"}, "other"))
         self.assertIsNone(U.transfer_match(idx, "3000", 3, 3, "00000001b", {"00", "01"}))
+
+    def test_esysplus_reference_reads_by_index(self):
+        # the same as the dumps, read straight from E-Sys Plus by index (discussion #9): only the newer version,
+        # where '.' marks values the reference has no name for
+        for p in glob.glob(os.path.join(U.RAW_DIR, "*.tsv.gz")):
+            os.remove(p)
+        src = os.path.join(self.tmp, "esysplus", CID)
+        os.makedirs(src)
+        names = [n for _, _, n in self.REF]
+        for ver, lay in (("008_000_001", self.REF), ("009_000_001", self.NEW)):   # every version, as dumped
+            rows = ["GROUP_ADDR_HEX\tGROUP_NAME\tFUNC_INDEX\tFUNC_NAME\tPARAM_INDEX\tPARAM_NAME\tPARAM_VALUE"]
+            for i, (k, codes, *_r) in enumerate(lay):
+                if i >= len(names):
+                    continue
+                for pi, x in enumerate(codes):
+                    v = self.VALS[names[i]].get(x, ".")
+                    rows.append(f"3000\tApplikation\t{i}\t{names[i]}\t{pi}\t{v}\t{x}")
+            with open(os.path.join(src, f"EGS (Reference_CAF_{CID}_116_064_000)_{CID}_{ver}.tsv"), "w",
+                      encoding="utf-8") as f:
+                f.write("\n".join(rows) + "\n")
+        quiet(U.pack_esysplus, os.path.join(self.tmp, "esysplus"))
+        x = U.load_index(CID)[("3000", "116_064_000")]
+        self.assertEqual(x["N"][1], "SPEED_MIN")
+        self.assertIn("02", x["A"][1])                       # the new 3-bit field's 02 isn't SPEED_MIN's
+        quiet(U.realign_cid, CID, self.layouts)
+        g, _ = U.load(CID, U.TRANSFERRED_DIR)
+        idx = U.transfer_index(g)
+        self.assertEqual(U.transfer_match(idx, "3000", 1, 1, "00011111b", {"00", "03", "06"})[0], "SPEED_MIN")
+        self.assertIsNone(U.transfer_match(idx, "3000", 0, 0, "00001110b", {"00", "01", "02"}))
 
     def test_no_reference_layout_no_names(self):
         del self.layouts["3000"][U.layout_hash([f[0] for f in self.REF])]

@@ -13,12 +13,14 @@ in esys\agent.js at runtime). Four folders, never mixed:
                                                  for "function #i of group G" (discussion #9), so wherever BMW
                                                  inserted or removed functions, every later name is on the wrong
                                                  field (00001EF6 006_064_014, group 3000: 37 functions off).
+  definitions\untrimmed\transferred\raw\byindex\ E-Sys Plus's references read by index for every CAFD version
+                                                 (pack-esysplus): H/N/P/A rows. Input only.
   definitions\untrimmed\transferred\<id>.tsv.gz  realign(): each reference's names put back on the layout it was
-                                                 made for (the cached version where every function's value codes
-                                                 have a name), keyed by field, with the coding-rule print of each
-                                                 function (R rows). Applied to any version by field: same address,
-                                                 start, end and mask, every value code named, and for on/off flags
-                                                 the same rule print (transfer_match). Always marked UNVERIFIED.
+                                                 made for, then decided field by field for every layout in the
+                                                 maintainer's definition DBs (same field, every value code named;
+                                                 flags: same rule print and unchanged neighbouring fields). Applied
+                                                 by exact layout; unknown layouts borrow multi-value fields by field
+                                                 (transfer_match). Always marked UNVERIFIED.
   definitions\untrimmed\transferred\rejected\    realigned rows that contradict BMW's own names (vet()), with the
                                                  reason in a 9th column. Never applied.
 
@@ -31,6 +33,9 @@ Package rows (tab separated):   kind  address  layout_hash  start  end  mask  va
 
     python ocm\untrimmed.py pack-caf <folder>       decrypted psdzdata CAFDs (<caf> XML) that still carry their names
     python ocm\untrimmed.py pack-dumps <folder>     E-Sys 3.35.3 dumps (CafdDefinition XML, e.g. Agent3353) -> raw\
+    python ocm\untrimmed.py pack-esysplus <folder>  E-Sys Plus reference reads by function index (TSV, discussion #9)
+                                                    -> raw\byindex\ (kinds H/N/P/A: group, function, value name,
+                                                    value the reference has no name for)
     python ocm\untrimmed.py pack-db <sqlite> [src..]  names already in a definition DB -> raw\ (sources: untrimmed fwl)
     python ocm\untrimmed.py realign <db.sqlite>.. [id..]  raw\ -> transferred\; the definition DBs must hold every
                                                     version of those CAFDs (e.g. workspace\cafd_defs_G020.sqlite)
@@ -54,6 +59,9 @@ PACK_DIR = os.path.join(config.CONTRIB, "untrimmed")
 TRANSFERRED_DIR = os.path.join(PACK_DIR, "transferred")
 REJECTED_DIR = os.path.join(TRANSFERRED_DIR, "rejected")
 RAW_DIR = os.path.join(TRANSFERRED_DIR, "raw")
+BYINDEX_DIR = os.path.join(RAW_DIR, "byindex")
+BYINDEX_HEADER = "# kind\taddress\treference\tfunction_index\tvalue_hex\tname\n"
+ESYSPLUS_FILE = re.compile(r"Reference_CAF_([0-9A-Fa-f]{8})_(\d{3}_\d{3}_\d{3})\)")
 REFERENCE = re.compile(r"Reference[:_]CAF_[0-9A-Fa-f]{8}_(\d{3}_\d{3}_\d{3})")
 HEADER = "# kind\taddress\tlayout_hash\tstart\tend\tmask\tvalue_hex\tname\n"
 REJECTED_HEADER = "# kind\taddress\tlayout_hash\tstart\tend\tmask\tvalue_hex\tname\treason\n"
@@ -151,8 +159,9 @@ def entry():
     return {"G": None, "F": {}, "V": {}, "R": {}, "S": None}
 
 
-def load(cid, folder=PACK_DIR):
+def load(cid, folder=None):
     """{(address, hash): entry()}, {address: group name for any layout}"""
+    folder = folder or PACK_DIR
     p = os.path.join(folder, f"{cid.upper()}.tsv.gz")
     groups, fallback = defaultdict(entry), {}
     if not os.path.exists(p):
@@ -177,7 +186,8 @@ def load(cid, folder=PACK_DIR):
     return groups, fallback
 
 
-def save(cid, groups, fallback, folder=PACK_DIR):
+def save(cid, groups, fallback, folder=None):
+    folder = folder or PACK_DIR
     os.makedirs(folder, exist_ok=True)
     rows = [f"G\t{a}\t*\t\t\t\t\t{n}" for a, n in sorted(fallback.items())]
     for (a, h), g in sorted(groups.items()):
@@ -196,8 +206,9 @@ def save(cid, groups, fallback, folder=PACK_DIR):
     return len(rows)
 
 
-def save_rejected(cid, rows, folder=REJECTED_DIR):
+def save_rejected(cid, rows, folder=None):
     """rows: [(kind, addr, hash, st, en, mask, value_hex, name, reason)] -> rejected\\<id>.tsv.gz (removed if empty)."""
+    folder = folder or REJECTED_DIR
     p = os.path.join(folder, f"{cid.upper()}.tsv.gz")
     if not rows:
         if os.path.exists(p):
@@ -210,7 +221,52 @@ def save_rejected(cid, rows, folder=REJECTED_DIR):
     return len(rows)
 
 
-def load_rejected(cid, folder=REJECTED_DIR):
+def index_entry():
+    """What E-Sys Plus's reference says for one group, by function index: its group name, function names, value
+    names, and values it has no name for (so the reference function doesn't have them)."""
+    return {"H": None, "N": {}, "P": defaultdict(dict), "A": defaultdict(set)}
+
+
+def load_index(cid, folder=None):
+    r"""raw\byindex\<id>.tsv.gz -> {(addr, reference): index_entry()}."""
+    folder = folder or BYINDEX_DIR
+    out = defaultdict(index_entry)
+    p = os.path.join(folder, f"{cid.upper()}.tsv.gz")
+    if not os.path.exists(p):
+        return out
+    for line in gzip.open(p, "rt", encoding="utf-8"):
+        if line.startswith("#") or not line.strip():
+            continue
+        kind, a, ref, i, vh, name = (line.rstrip("\r\n").split("\t") + [""] * 6)[:6]
+        e = out[(a, ref)]
+        if kind == "H":
+            e["H"] = name
+        elif kind == "N":
+            e["N"][int(i)] = name
+        elif kind == "P":
+            e["P"][int(i)][vh] = name
+        elif kind == "A":
+            e["A"][int(i)].add(vh)
+    return out
+
+
+def save_index(cid, data, folder=None):
+    folder = folder or BYINDEX_DIR
+    os.makedirs(folder, exist_ok=True)
+    rows = []
+    for (a, ref), e in sorted(data.items()):
+        if e["H"]:
+            rows.append(f"H\t{a}\t{ref}\t\t\t{e['H']}")
+        rows += [f"N\t{a}\t{ref}\t{i}\t\t{n}" for i, n in sorted(e["N"].items())]
+        rows += [f"P\t{a}\t{ref}\t{i}\t{vh}\t{n}" for i, vs in sorted(e["P"].items()) for vh, n in sorted(vs.items())]
+        rows += [f"A\t{a}\t{ref}\t{i}\t{vh}\t" for i, vs in sorted(e["A"].items()) for vh in sorted(vs)]
+    with gzip.GzipFile(os.path.join(folder, f"{cid.upper()}.tsv.gz"), "wb", compresslevel=9, mtime=0) as f:
+        f.write((BYINDEX_HEADER + "\n".join(rows) + "\n").encode("utf-8"))
+    return len(rows)
+
+
+def load_rejected(cid, folder=None):
+    folder = folder or REJECTED_DIR
     p = os.path.join(folder, f"{cid.upper()}.tsv.gz")
     if not os.path.exists(p):
         return []
@@ -222,12 +278,13 @@ def load_rejected(cid, folder=REJECTED_DIR):
 # E-Sys Plus gives function #i of a group the name of function #i of its reference CAF (discussion #9). Measured over
 # the package (2026-11-24): 99.94% of (group, function index) slots carry the same name in every dumped layout,
 # wherever the field sits. So the names are right only on the layout the reference was made for, and that layout
-# is recognisable: there, every function's value codes have a value name. realign() finds it among the versions in
-# a definition DB and keys the names by field; transfer_match() then names a function of any version only where the
-# field (address, start, end, mask) is the same, every value code is named, and, for on/off flags and reserved bits
-# (no more than FLAG_CODES value codes, which can't tell fields apart), the coding rules print the same.
-# Checked against BMW's own names where both exist: 279 right, 1 wrong (two padding fields), vs E-Sys Plus by index
-# misplacing 16,504 of 89,105 names in the same groups.
+# is recognisable: E-Sys Plus names a value only when the reference function has it ('.' otherwise), so there every
+# value code named for #i is present and none of the unnamed ones. realign() finds it among the versions in the
+# definition DBs and decides every layout field by field: same field (address, start, end, mask), every value code
+# named, and, for on/off flags and reserved bits (no more than FLAG_CODES value codes, which can't tell fields
+# apart), the same coding-rule print and unchanged fields up to the nearest multi-value field on each side.
+# Against BMW's own names (before vet): 25,640 of 25,769 agree, the rest partly BMW renames (*_FUNC / *_TYPE);
+# E-Sys Plus by index had misplaced about a fifth of its names.
 FLAG_CODES = 2
 REF_FIT = 0.95          # share of a layout's functions whose value codes the reference names, to count as its layout
 
@@ -308,20 +365,38 @@ def cache_layouts(dbs, ids):
 
 
 def realign_cid(cid, layouts):
-    """raw\\<id> (E-Sys Plus by index) + this CAFD id's layouts (cache_layouts) -> transferred\\<id>: each
-    reference's names on the layout it was made for. -> Counter of what happened."""
+    """raw\\<id> (E-Sys Plus by index: dumped layouts) + raw\\byindex\\<id> (E-Sys Plus's references read by index)
+    + this CAFD id's layouts (cache_layouts) -> transferred\\<id>: each reference's names on the layout it was made
+    for. -> Counter of what happened."""
     raw, raw_fb = load(cid, RAW_DIR)
+    byidx = load_index(cid)
     out, n = defaultdict(entry), Counter()
+    refs = defaultdict(list)                             # addr -> [(ref layout hash, ref, field names, group)]
     buckets = defaultdict(list)                          # (addr, reference) -> [(hash, raw entry)]
     for (a, h), e in raw.items():
         if h in layouts.get(a, {}):
             buckets[(a, e["S"] or "?")].append((h, e))
         elif e["F"]:
             n["raw layouts not in the definition DBs"] += 1
+    for (a, ref), x in byidx.items():
+        if a in layouts:
+            buckets.setdefault((a, ref), [])
+        elif x["N"]:
+            n["referenced groups not in the definition DBs"] += 1
     for (a, ref), items in sorted(buckets.items()):
         # per reference function #i: its name, the value names E-Sys Plus gave (codes it has), and the codes a
         # dumped function #i had that got no value name (codes it doesn't have)
         names, vals, absent, gname = defaultdict(Counter), defaultdict(dict), defaultdict(set), Counter()
+        x = byidx.get((a, ref))
+        if x:
+            if x["H"]:
+                gname[x["H"]] += 1
+            for i, nm in x["N"].items():
+                names[i][nm] += 1
+            for i, vs in x["P"].items():
+                vals[i].update(vs)
+            for i, vs in x["A"].items():
+                absent[i] |= vs
         for h, e in items:
             if e["G"]:
                 gname[e["G"]] += 1
@@ -344,6 +419,9 @@ def realign_cid(cid, layouts):
                 continue
             ev = [i for i in range(len(fs)) if vals.get(i) or absent.get(i)]
             if not ev:
+                # no value names to compare (raw data fields): only safe when the group never changed layout
+                if len(layouts[a]) == 1 and len(fs) == size:
+                    best = ((1.0, True), h)
                 continue
             fit = sum(1 for i in ev if set(vals.get(i, ())) <= fs[i][1] and not (absent.get(i, set()) & fs[i][1]))
             score = (fit / len(ev), len(fs) == size)
@@ -354,18 +432,41 @@ def realign_cid(cid, layouts):
         if not best or best[0] < REF_FIT:
             n["groups whose reference layout isn't in the definition DBs"] += 1
             continue
-        e = out[(a, best[1])]
-        e["S"] = e["S"] or (None if ref == "?" else ref)
-        e["G"] = e["G"] or (gname.most_common(1)[0][0] if gname else None)
-        for i, (k, cs, ps) in enumerate(layouts[a][best[1]]):
-            if len(names.get(i, ())) != 1 or not all(vals[i].get(x) for x in cs):
-                continue
-            e["F"].setdefault(k, next(iter(names[i])))
-            e["R"].setdefault(k, set()).update(ps)
-            for x in cs:
-                e["V"].setdefault(k + (x,), vals[i][x])
-            n["functions"] += 1
+        refs[a].append((best[1], ref, {k: (next(iter(names[i])), {x: vals[i][x] for x in cs}, ps, i)
+                                       for i, (k, cs, ps) in enumerate(layouts[a][best[1]])
+                                       if len(names.get(i, ())) == 1 and all(vals[i].get(x) for x in cs)},
+                        gname.most_common(1)[0][0] if gname else None))
         n["groups realigned"] += 1
+    # every version's layout: a function gets the reference's name for the same field when its value codes are all
+    # named there and, for an on/off flag or reserved bit, its rule print is the reference's and the fields around it
+    # (up to the nearest multi-value fields) are the reference's too: BMW inserting a flag shifts every later flag in
+    # the byte without changing any field's shape, values or rules. Measured against BMW's own names: 1 wrong in 1415
+    # (4% wrong without the neighbourhood rule).
+    for a, rl in refs.items():
+        for h, T in layouts[a].items():
+            e = out[(a, h)]
+            for href, ref, field, gname in rl:
+                e["G"] = e["G"] or gname
+                if h == href:
+                    e["S"] = e["S"] or (None if ref == "?" else ref)
+            for t, (k, cs, ps) in enumerate(T):
+                got = set()
+                for href, _ref, field, _g in rl:
+                    c = field.get(k)
+                    if not c or not set(cs) <= set(c[1]):
+                        continue
+                    if len(cs) <= FLAG_CODES and not (ps & c[2] and same_neighbourhood(T, t, layouts[a][href], c[3])):
+                        continue
+                    got.add((c[0], tuple(sorted((x, c[1][x]) for x in cs))))
+                if len({g[0].upper() for g in got}) != 1:
+                    if got:
+                        n["functions two references name differently"] += 1
+                    continue
+                name, vs = next(iter(got))
+                e["F"][k] = name
+                for x, vn in vs:
+                    e["V"][k + (x,)] = vn
+                n["layout functions named"] += 1
     out = {k: e for k, e in out.items() if e["G"] or e["F"]}
     p = os.path.join(TRANSFERRED_DIR, f"{cid.upper()}.tsv.gz")
     if out or raw_fb:
@@ -376,9 +477,22 @@ def realign_cid(cid, layouts):
     return n
 
 
+def same_neighbourhood(T, t, R, r):
+    """Are the fields around function t of layout T, up to the nearest multi-value field on each side (or the group's
+    edge), the same, in the same order, as those around function r of the reference layout R?"""
+    def bounds(seq, i):
+        lo = next((j for j in range(i - 1, -1, -1) if len(seq[j][1]) > FLAG_CODES), -1)
+        hi = next((j for j in range(i + 1, len(seq)) if len(seq[j][1]) > FLAG_CODES), len(seq))
+        return lo, hi
+    tl, th = bounds(T, t)
+    rl, rh = bounds(R, r)
+    seg = lambda seq, lo, hi: [(f[0], f[1]) for f in seq[max(lo, 0):min(hi + 1, len(seq))]]  # noqa: E731
+    return t - tl == r - rl and seg(T, tl, th) == seg(R, rl, rh)
+
+
 def realign(dbs, ids=None):
-    ids = [i.upper() for i in ids] if ids else sorted(os.path.basename(p)[:8].upper()
-                                                     for p in glob.glob(os.path.join(RAW_DIR, "*.tsv.gz")))
+    ids = [i.upper() for i in ids] if ids else sorted({os.path.basename(p)[:8].upper() for d in (RAW_DIR, BYINDEX_DIR)
+                                                      for p in glob.glob(os.path.join(d, "*.tsv.gz"))})
     layouts = cache_layouts(dbs, ids)
     total = Counter()
     for cid in ids:
@@ -480,8 +594,9 @@ def vet_all(ids=None):
           f"{rejected} rejected")
 
 
-def merge(cid, found, folder=PACK_DIR):
+def merge(cid, found, folder=None):
     """found: {(addr, hash): entry()} + group-name votes -> merged into the package (existing names win)."""
+    folder = folder or PACK_DIR
     groups, fallback = load(cid, folder)
     votes = defaultdict(Counter)
     for (a, h), g in found.items():
@@ -533,6 +648,67 @@ def pack_dumps(folder):
     print(f"{len(per)} CAFD ids from {folder} -> {RAW_DIR} ({total} rows)")
     print("Now run: python ocm\\untrimmed.py realign <definition DBs with every version of these CAFDs> "
           + " ".join(sorted(per)))
+
+
+def pack_esysplus(folder):
+    r"""E-Sys Plus reference reads by function index (discussion #9): TSVs named
+    '<ECU> (Reference_CAF_<id>_<ref>)_<...>.tsv' with GROUP_ADDR_HEX GROUP_NAME FUNC_INDEX FUNC_NAME PARAM_INDEX
+    PARAM_NAME PARAM_VALUE, one per CAFD version or merged per reference (any folder depth). -> raw\byindex\. A
+    value named '.' is one the reference has no name for. Then run realign."""
+    per = defaultdict(lambda: defaultdict(index_entry))
+    files = clash = 0
+    ambiguous = defaultdict(set)                         # (cid, addr, ref) -> {(index, value)} with two names
+    for root, _dirs, names in os.walk(folder):
+        for fn in sorted(names):
+            m = ESYSPLUS_FILE.search(fn)
+            if not fn.lower().endswith(".tsv") or not m:
+                continue
+            files += 1
+            cid, ref = m.group(1).upper(), m.group(2)
+            with open(os.path.join(root, fn), encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    p = line.rstrip("\r\n").split("\t")
+                    if len(p) < 7 or not p[2].isdigit():
+                        continue
+                    a, gname, i, fname, _pi, pname, pval = p[:7]
+                    e, i, vh = per[cid][(a.upper(), ref)], int(i), pval.replace(" ", "").upper()
+                    if gname and not placeholder(gname) and not e["H"]:
+                        e["H"] = gname
+                    if fname and not placeholder(fname) and e["N"].setdefault(i, fname) != fname:
+                        clash += 1
+                    if not vh:
+                        continue
+                    if placeholder(pname):
+                        e["A"][i].add(vh)
+                    elif e["P"][i].setdefault(vh, pname) != pname:
+                        # a function listing one value twice gets a name per param index (aktiv / nicht_aktiv
+                        # both on 01): no single name for that value
+                        ambiguous[(cid, a.upper(), ref)].add((i, vh))
+    for (cid, a, ref), iv in ambiguous.items():
+        e = per[cid][(a, ref)]
+        for i, vh in iv:
+            e["P"][i].pop(vh, None)
+            clash += 1
+    total = 0
+    for cid, found in per.items():
+        have = load_index(cid)
+        for k, e in found.items():
+            h = have[k]
+            h["H"] = h["H"] or e["H"]
+            for i, nm in e["N"].items():
+                h["N"].setdefault(i, nm)
+            for i, vs in e["P"].items():
+                for vh, nm in vs.items():
+                    h["P"][i].setdefault(vh, nm)
+            for i, vs in e["A"].items():
+                h["A"][i] |= vs
+        for e in have.values():                          # a value named somewhere is the reference's after all
+            for i in list(e["A"]):
+                e["A"][i] -= set(e["P"].get(i, {}))
+        total += save_index(cid, have)
+    print(f"{files} E-Sys Plus files, {len(per)} CAFD ids -> {BYINDEX_DIR} ({total} rows; {clash} values with two names "
+          "dropped)")
+    print("Now run: python ocm\\untrimmed.py realign <definition DBs with every version of these CAFDs>")
 
 
 CAF_NS = {"c": "http://bmw.com/2005/psdz.data.caf"}
@@ -638,6 +814,8 @@ if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "pack-dumps" and len(sys.argv) > 2:
         pack_dumps(sys.argv[2])
+    elif cmd == "pack-esysplus" and len(sys.argv) > 2:
+        pack_esysplus(sys.argv[2])
     elif cmd == "pack-caf" and len(sys.argv) > 2:
         pack_caf(sys.argv[2])
     elif cmd == "pack-db" and len(sys.argv) > 2:

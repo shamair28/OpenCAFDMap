@@ -48,6 +48,7 @@ Written by `ocm\untrimmed.py`, one file per CAFD id in each folder:
 |---|---|---|
 | `untrimmed\<CAFD id>.tsv.gz` | BMW's own names, read from psdzdata old enough to still carry them (PSdZData 54.1 and older) | as they are |
 | `untrimmed\transferred\raw\` | what E-Sys Plus showed for newer, trimmed CAFD versions (E-Sys 3.35.3 dumps), with the reference it used | never: input for `realign` |
+| `untrimmed\transferred\raw\byindex\` | E-Sys Plus's references read directly by function index for every CAFD version (Inspelning's E-Sys Plus 3.8.1 dumps, [discussion #9](https://github.com/shamair28/OpenCAFDMap/discussions/9)): rows `kind address reference function_index value_hex name`, kinds H (group), N (function), P (value), A (a value the reference has no name for) | never: input for `realign` |
 | `untrimmed\transferred\<CAFD id>.tsv.gz` | E-Sys Plus's reference names put back on the fields they belong to (`realign`) | always ending in ` (?)` |
 | `untrimmed\transferred\rejected\` | realigned names that contradict BMW's own, with the reason in a 9th column | never |
 
@@ -67,13 +68,19 @@ names sat on the wrong field.
 hold every version, e.g. `workspace\cafd_defs_G020.sqlite`):
 1. Rebuild each reference's names by position from the dumps of every version that used it.
 2. Find the version whose layout the reference was made for: function by function, it has every value code E-Sys
-   Pro named for that position and none it couldn't name.
-3. Store the names on that layout's fields, with each function's value names and coding-rule print.
+   Plus named for that position and none it couldn't name. (A group with a single layout in every version and no
+   value names needs no such evidence: there, position and field are the same thing.)
+3. Decide every version's layout in the DBs, field by field: a function gets the reference's name for the same
+   address, start, end and mask when every value code has a value name there. An on/off flag or reserved bit (two
+   value codes or fewer) also needs the reference's coding rules, and the fields around it, up to the nearest
+   multi-value field on each side, must be the reference's too: BMW inserting a flag shifts every later flag in the
+   byte without changing their shape, values or rules.
+4. Store the names per layout. A version that isn't in the DBs (a newer psdzdata) borrows only multi-value fields,
+   by field.
 
-A CAFD version then gets a transferred name only for a field with the same address, start, end and mask whose
-every value code has a value name there; on/off flags and reserved bits (two value codes or fewer, which can't
-tell fields apart) also need the same coding rules. Checked against BMW's own names where both exist, 279 of 280
-came out right. Groups whose reference layout isn't in the DBs get no transferred names at all.
+Checked against BMW's own names where both exist (before `vet`), 25,640 of 25,769 agree; the 129 others include
+BMW's own renames between versions (`*_FUNC` / `*_TYPE`). Groups whose reference layout isn't in the DBs get no
+transferred names at all.
 
 Transferred names stay marked ` (?)`: they are E-Sys Plus's names, placed by this matching, not BMW's own names for
 your version. **What gets rejected** (`python ocm\untrimmed.py vet`, run after every realign or pack): a name BMW's
@@ -95,5 +102,10 @@ they weren't made for. Names in `my_names.tsv`, `names\versioned\` rows and defi
 
 To add names: `python ocm\untrimmed.py pack-caf <folder>` for decrypted psdzdata CAFDs that still carry their names
 (BMW's own). For E-Sys 3.35.3 dumps: `python ocm\untrimmed.py pack-dumps <folder>` (into `raw\`), then `realign`.
+For E-Sys Plus reference reads by index (`<ECU> (Reference_CAF_<id>_<ref>)_<...>.tsv` with `GROUP_ADDR_HEX GROUP_NAME
+FUNC_INDEX FUNC_NAME PARAM_INDEX PARAM_NAME PARAM_VALUE`): `python ocm\untrimmed.py pack-esysplus <folder>` (into
+`raw\byindex\`), then `realign`. E-Sys Plus names values by value, so a value it names `.` tells `realign` which
+codes the reference function doesn't have; a function listing one value twice gets a name per position, and those
+value names are dropped. The reference E-Sys Plus picks for a CAFD can differ between machines; every one helps.
 Dumps of every reference a CAFD has, and of the version each reference was made for, help most. Packing only adds
 names; the check validates every row.

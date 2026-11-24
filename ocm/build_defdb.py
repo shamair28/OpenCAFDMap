@@ -666,7 +666,7 @@ def apply_untrimmed(con, folder):
             con.executemany("INSERT INTO u_g VALUES(?,?,?,?,?)", [(cid, a, "*", n, t) for a, n in fallback.items()]
                             + [(cid, a, h, g["G"], t) for (a, h), g in groups.items() if g["G"]])
             if t == 1:
-                tidx[cid] = U.transfer_index(groups)    # applied by field, not by layout (apply_transferred)
+                tidx[cid] = groups                      # applied in Python (apply_transferred)
                 continue
             fidx[cid] = U.field_index(groups)           # the field fallback borrows BMW's own names only
             con.executemany("INSERT INTO u_f VALUES(?,?,?,?,?,?,?,?)",
@@ -749,14 +749,19 @@ def strip_unverified_note(comment):
 
 def apply_transferred(con, tidx):
     r"""Names from E-Sys Plus's reference CAFDs (definitions\untrimmed\transferred, realigned): a function that is
-    still a placeholder or carries an unverified name gets one when the same field (address, start, end, mask) is
-    named there, every one of its value codes has a value name, and, for on/off flags and reserved bits, its coding
-    rules print the same (untrimmed.transfer_match). Always marked unverified, with TRANSFER_NOTE."""
+    still a placeholder or carries an unverified name gets the one untrimmed.realign decided for its own layout (every
+    layout in the maintainer's definition DBs), when every value code has a value name there. A layout that isn't
+    packaged (a newer version) borrows only for multi-value fields, by the same field in the packaged layouts
+    (untrimmed.transfer_match; on/off flags need realign's neighbourhood check). Always marked unverified, with
+    TRANSFER_NOTE."""
     import untrimmed as U
     fupd, vupd = [], []
-    for cid, idx in tidx.items():
-        if not idx:
+    for cid, groups in tidx.items():
+        if not groups:
             continue
+        idx = U.transfer_index(groups)
+        hashes = dict(con.execute("SELECT f.pk, h.hash FROM func f JOIN cafd c ON c.pk=f.cafd_pk "
+                                  "JOIN dg_hash h ON h.dg_pk=f.dg_pk WHERE c.cafd_id=?", (cid,)))
         vals = defaultdict(list)
         for fpk, vpk, vi, hx, label, lsrc, raw in con.execute(
                 "SELECT v.func_pk, v.pk, v.idx, upper(v.hex), v.label, v.label_source, coalesce(r.raw, '') FROM val v "
@@ -768,11 +773,18 @@ def apply_transferred(con, tidx):
                 "JOIN cafd c ON c.pk=f.cafd_pk WHERE c.cafd_id=? AND (f.name_source='derived' OR "
                 "(f.name_source IN ('contributed', 'sheet', 'cheatsheet', 'legacy') AND f.name LIKE ?))",
                 (cid, "%" + U.UNVERIFIED)).fetchall():
-            if (addr, st, en, U.norm_mask(mk)) not in idx:
-                continue
+            k = (st, en, U.norm_mask(mk))
             v = vals.get(fpk, [])
-            m = U.transfer_match(idx, addr, st, en, mk, {x[2] for x in v},
-                                 U.rule_print([(x[2], x[5]) for x in v]))
+            hexes = {x[2] for x in v}
+            g = groups.get((addr, hashes.get(fpk)))
+            if g is not None:                            # a packaged layout: realign's decision for it, or nothing
+                if k not in g["F"] or not all(k + (x,) in g["V"] for x in hexes):
+                    continue
+                m = (g["F"][k], {x: g["V"][k + (x,)] for x in hexes})
+            elif (addr,) + k in idx:
+                m = U.transfer_match(idx, addr, st, en, mk, hexes)   # flags need a rule print: never here
+            else:
+                continue
             if not m:
                 continue
             n, vnames = m

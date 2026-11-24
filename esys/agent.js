@@ -461,7 +461,7 @@
         grpRenamed++;
       }
 
-      var uG = null, tG = null;     // tG: a transferred reference layout identical to this one (group name only)
+      var uG = null, tG = null;     // tG: transferred names realign decided for exactly this layout
       if (uPack) {
         var uFns = dg.getFunction();
         if (uFns && uFns.size() > 0) {
@@ -536,6 +536,15 @@
             if (namesValues(uG, uKey, fnHexes, false)) fn.setName(uG.F[uKey]);
             else { fn.setName(uG.F[uKey] + POS_MARK); addNote(VALUES_NOTE); }
             untrimmedHits++;
+          } else if (tG && !(uG && uG.F[uKey]) && isPlaceholder(fn.getName())) {
+            // a layout realign decided (ocm/untrimmed.py): its name for this field, or none
+            if (tG.F[uKey] && namesValues(tG, uKey, fnHexes, true)) {
+              fn.setName(tG.F[uKey] + POS_MARK);
+              addNote(TRANSFER_NOTE);
+              vG = tG;
+              untrimmedHits++;
+              transferHits++;
+            }
           } else if (!(uG && uG.F[uKey]) && isPlaceholder(fn.getName())
                      && (posMatch = transferMatch(uPack, addr, uKey, fnHexes))) {
             fn.setName(posMatch.n + POS_MARK);   // posMatch.v now holds its value names
