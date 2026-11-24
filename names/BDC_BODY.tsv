@@ -1,0 +1,9 @@
+# Open CAFD Map community names. Tab separated, UTF-8. One row = one name, version independent.
+# cafd_id  address  start  end  mask  value_hex  name  comment
+#  - group name:    start/end/mask/value_hex empty
+#  - function name: value_hex empty      - value name: all columns
+#  - comment-only function row: name empty, comment set
+# Say where a name comes from in the comment (screenshot, BimmerCode diff, table, ...).
+# names of groups added in cafd_000017be.caf.062_010_106, dumped from E-Sys Plus 3.8.1 (Reference 076_102_000).
+000017BE	3072					LaMaster0	group name dumped from from E-Sys Plus 3.8.1 (Reference 076_102_000)
+000017BE	3076					LciMasterColor	group name dumped from from E-Sys Plus 3.8.1 (Reference 076_102_000)
