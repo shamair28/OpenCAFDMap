@@ -294,6 +294,7 @@ def main():
                         + sorted(glob.glob(os.path.join(config.NAMES, "cheatsheet", "*.tsv")))
                         + sorted(glob.glob(os.path.join(config.CONTRIB, "**", "*.xml"), recursive=True))
                         + sorted(glob.glob(os.path.join(config.CONTRIB, "untrimmed", "*.tsv.gz")))
+                        + sorted(glob.glob(os.path.join(config.CONTRIB, "untrimmed", "bmw", "*.tsv.gz")))
                         + sorted(glob.glob(os.path.join(config.CONTRIB, "untrimmed", "transferred", "*.tsv.gz")))
                         + sorted(glob.glob(os.path.join(config.CONTRIB, "untrimmed", "transferred", "rejected",
                                                         "*.tsv.gz")))

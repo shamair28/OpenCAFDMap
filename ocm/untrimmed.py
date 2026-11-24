@@ -2,11 +2,16 @@
 r"""Untrimmed names, packed by datagroup layout.
 
 A datagroup's *layout* is the ordered list of its functions' start:end:mask (layout_hash; the same hash is computed
-in esys\agent.js at runtime). Four folders, never mixed:
+in esys\agent.js at runtime). The folders, never mixed:
 
-  definitions\untrimmed\<id>.tsv.gz              BMW's own names, read from psdzdata old enough to still carry
+  definitions\untrimmed\bmw\<id>.tsv.gz          BMW's own names, read from psdzdata old enough to still carry
                                                  them (PSdZData 54.1 and older): pack-caf. They apply to every
                                                  version with the same layout and are shown as they are.
+  definitions\untrimmed\<id>.tsv.gz              the compatibility pack for launchers that read only this folder
+                                                 (v2, v3.0.0): bmw\ plus transferred\ (BMW's own wins), written by
+                                                 compat(). Those launchers can't mark names, so they show the
+                                                 realigned names unmarked, on the right fields. This launcher never
+                                                 reads it.
   definitions\untrimmed\transferred\raw\         what E-Sys Plus showed for newer, trimmed versions (E-Sys 3.35.3
                                                  dumps: pack-dumps), per dumped layout, with the reference it used
                                                  (S rows). Input only, never applied: E-Sys Plus asks its reference
@@ -24,7 +29,6 @@ in esys\agent.js at runtime). Four folders, never mixed:
   definitions\untrimmed\transferred\rejected\    realigned rows that contradict BMW's own names (vet()), with the
                                                  reason in a 9th column. Never applied.
 
-Launchers older than this split (v2, v3.0.0) read only the top folder, so they never show a transferred name.
 Groups whose layout isn't packaged fall back to exact field matches of BMW's own names, also marked (field_match).
 
 Package rows (tab separated):   kind  address  layout_hash  start  end  mask  value_hex  name  [reason]
@@ -40,6 +44,8 @@ Package rows (tab separated):   kind  address  layout_hash  start  end  mask  va
     python ocm\untrimmed.py realign <db.sqlite>.. [id..]  raw\ -> transferred\; the definition DBs must hold every
                                                     version of those CAFDs (e.g. workspace\cafd_defs_G020.sqlite)
     python ocm\untrimmed.py vet [id..]              re-check transferred rows against BMW's own names
+    python ocm\untrimmed.py compat [id..]           rewrite the top-level compatibility pack (done after every pack,
+                                                    realign and vet)
     python ocm\untrimmed.py stats
 """
 import glob
@@ -55,8 +61,9 @@ from collections import Counter, defaultdict
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import config  # noqa: E402
 
-PACK_DIR = os.path.join(config.CONTRIB, "untrimmed")
-TRANSFERRED_DIR = os.path.join(PACK_DIR, "transferred")
+COMPAT_DIR = os.path.join(config.CONTRIB, "untrimmed")
+PACK_DIR = os.path.join(COMPAT_DIR, "bmw")
+TRANSFERRED_DIR = os.path.join(COMPAT_DIR, "transferred")
 REJECTED_DIR = os.path.join(TRANSFERRED_DIR, "rejected")
 RAW_DIR = os.path.join(TRANSFERRED_DIR, "raw")
 BYINDEX_DIR = os.path.join(RAW_DIR, "byindex")
@@ -580,7 +587,41 @@ def vet(cid):
     elif os.path.exists(os.path.join(TRANSFERRED_DIR, f"{cid.upper()}.tsv.gz")):
         os.remove(os.path.join(TRANSFERRED_DIR, f"{cid.upper()}.tsv.gz"))
     save_rejected(cid, rej)
+    compat(cid)
     return sum(len(e["F"]) for e in keep.values()), sum(1 for r in rej if r[0] == "F")
+
+
+def compat(cid):
+    r"""definitions\untrimmed\<id>.tsv.gz for launchers that read only that folder (v2, v3.0.0): BMW's own names
+    (bmw\) plus the realigned transferred names (transferred\), BMW's own winning. G/F/V rows only, so those
+    launchers read it like before; they show every name unmarked."""
+    bmw, bfb = load(cid, PACK_DIR)
+    tr, tfb = load(cid, TRANSFERRED_DIR)
+    out = defaultdict(entry)
+    for src in (bmw, tr):
+        for key, e in src.items():
+            o = out[key]
+            o["G"] = o["G"] or e["G"]
+            for k, n in e["F"].items():
+                o["F"].setdefault(k, n)
+            for k, n in e["V"].items():
+                o["V"].setdefault(k, n)
+    fallback = dict(tfb)
+    fallback.update(bfb)
+    out = {k: dict(e, R={}, S=None) for k, e in out.items() if e["G"] or e["F"] or e["V"]}
+    p = os.path.join(COMPAT_DIR, f"{cid.upper()}.tsv.gz")
+    if out or fallback:
+        return save(cid, out, fallback, COMPAT_DIR)
+    if os.path.exists(p):
+        os.remove(p)
+    return 0
+
+
+def compat_all(ids=None):
+    ids = ids or sorted({os.path.basename(p)[:8].upper() for d in (PACK_DIR, TRANSFERRED_DIR)
+                         for p in glob.glob(os.path.join(d, "*.tsv.gz"))})
+    rows = sum(compat(cid) for cid in ids)
+    print(f"compatibility pack for v2 / v3.0.0: {len(ids)} CAFD ids, {rows} rows -> {COMPAT_DIR}")
 
 
 def vet_all(ids=None):
@@ -761,7 +802,8 @@ def pack_caf(folder):
     again = [c for c in sorted(per) if any(os.path.exists(os.path.join(d, f"{c}.tsv.gz"))
                                             for d in (TRANSFERRED_DIR, REJECTED_DIR))]
     if again:
-        vet_all(again)
+        vet_all(again)                                   # also rewrites their compatibility pack
+    compat_all(sorted(set(per) - set(again)))
 
 
 def pack_db(db, sources=("untrimmed", "fwl")):
@@ -798,7 +840,8 @@ def pack_db(db, sources=("untrimmed", "fwl")):
 
 def stats():
     for label, folder in (("BMW's own names", PACK_DIR), ("E-Sys Plus as dumped (raw, not applied)", RAW_DIR),
-                          ("transferred, realigned (unverified)", TRANSFERRED_DIR), ("rejected", REJECTED_DIR)):
+                          ("transferred, realigned (unverified)", TRANSFERRED_DIR), ("rejected", REJECTED_DIR),
+                          ("compatibility pack for v2 / v3.0.0", COMPAT_DIR)):
         files = glob.glob(os.path.join(folder, "*.tsv.gz"))
         c = Counter()
         for p in files:
@@ -825,6 +868,8 @@ if __name__ == "__main__":
                 [a for a in sys.argv[2:] if not a.lower().endswith(".sqlite")] or None)
     elif cmd == "vet":
         vet_all([c.upper() for c in sys.argv[2:]] or None)
+    elif cmd == "compat":
+        compat_all([c.upper() for c in sys.argv[2:]] or None)
     elif cmd == "stats":
         stats()
     else:

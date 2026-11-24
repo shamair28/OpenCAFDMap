@@ -632,7 +632,8 @@ UNTRIMMED_DIR = os.path.join(config.CONTRIB, "untrimmed")
 
 def apply_untrimmed(con, folder):
     r"""definitions\untrimmed\ (ocm\untrimmed.py), keyed by datagroup layout:
-    - <id>.tsv.gz: BMW's own names (psdzdata that still carried them). Every datagroup whose layout hash matches
+    (the top-level <id>.tsv.gz is the compatibility pack for v2 / v3.0.0 and isn't read here)
+    - bmw\<id>.tsv.gz: BMW's own names (psdzdata that still carried them). Every datagroup whose layout hash matches
       gets them (group names also by address as a fallback). Beats contributed definitions, cheat sheets and
       placeholders; my_names.tsv and names\*.tsv still win. A function with value codes that layout doesn't name
       (a reserved bit reused) keeps the name but marked unverified (VALUES_NOTE).
@@ -643,7 +644,8 @@ def apply_untrimmed(con, folder):
     (apply_untrimmed_fields, issue #8). Set-based: a few joins, not one UPDATE per name."""
     import untrimmed as U
     tdir = os.path.join(folder, "transferred") if folder else None
-    files = glob.glob(os.path.join(folder, "*.tsv.gz")) if folder and os.path.isdir(folder) else []
+    gdir = os.path.join(folder, "bmw") if folder else None   # the top folder is the pack for v2 / v3.0.0: not read
+    files = glob.glob(os.path.join(gdir, "*.tsv.gz")) if gdir and os.path.isdir(gdir) else []
     tfiles = glob.glob(os.path.join(tdir, "*.tsv.gz")) if tdir and os.path.isdir(tdir) else []
     if not files and not tfiles:
         return
@@ -661,7 +663,7 @@ def apply_untrimmed(con, folder):
     ids = sorted({os.path.basename(p)[:8].upper() for p in files + tfiles} & present)
     fidx, tidx = {}, {}
     for cid in ids:
-        for t, d in ((0, folder), (1, tdir)):
+        for t, d in ((0, gdir), (1, tdir)):
             groups, fallback = U.load(cid, d)
             con.executemany("INSERT INTO u_g VALUES(?,?,?,?,?)", [(cid, a, "*", n, t) for a, n in fallback.items()]
                             + [(cid, a, h, g["G"], t) for (a, h), g in groups.items() if g["G"]])

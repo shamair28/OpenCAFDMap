@@ -22,7 +22,7 @@ The format the agent reads, used by `export_defs.py` and older hand-made definit
 - **How it's used:**
   - *Names*: every real group, function and value name in it is imported for all versions that have the same address, bytes and mask, or only for the CAFD versions in an optional `versions="..."` on `<CafdDefinition>` (same ranges as `names\versioned\`: `062-`, `-052`, `052-061`, `062_010_106`; see [CONTRIBUTING.md](../CONTRIBUTING.md#names-for-some-cafd-versions-only)). Placeholders like `Group_3000` / `PfFesMaster_9_9_255` and derived labels like `wert_02 [SA5AC]` are ignored. `wert_02 aktiv [SA5AC]` gives the value name `aktiv`.
   - *Fallback*: if someone's psdzdata doesn't have that CAFD version, E-Sys uses the contributed file directly.
-- **Priority:** names files (`names\*.tsv`) > BMW's own untrimmed names (`untrimmed\`) > contributed definitions > E-Sys Plus's transferred names (`untrimmed\transferred\`, only over placeholders and other unverified names) > `names\cheatsheet\*.tsv` > cheat sheets > legacy names. Your private `my_names.tsv` always wins. A name not proven for the CAFD version you open ends in ` (?)` (section 3).
+- **Priority:** names files (`names\*.tsv`) > BMW's own untrimmed names (`untrimmed\bmw\`) > contributed definitions > E-Sys Plus's transferred names (`untrimmed\transferred\`, only over placeholders and other unverified names) > `names\cheatsheet\*.tsv` > cheat sheets > legacy names. Your private `my_names.tsv` always wins. A name not proven for the CAFD version you open ends in ` (?)` (section 3).
 - **Making one:**
   - Export from your build: `python ocm\export_defs.py --ids 000043AF --latest 0 --out definitions\FLM2`.
   - Or hand-write one for the functions you know.
@@ -46,7 +46,8 @@ Written by `ocm\untrimmed.py`, one file per CAFD id in each folder:
 
 | Folder | What it holds | How it's shown |
 |---|---|---|
-| `untrimmed\<CAFD id>.tsv.gz` | BMW's own names, read from psdzdata old enough to still carry them (PSdZData 54.1 and older) | as they are |
+| `untrimmed\bmw\<CAFD id>.tsv.gz` | BMW's own names, read from psdzdata old enough to still carry them (PSdZData 54.1 and older) | as they are |
+| `untrimmed\<CAFD id>.tsv.gz` | the pack for OpenLauncher v2 and v3.0.0, which only read this folder: `bmw\` plus the realigned names below, BMW's own winning (`untrimmed.py compat`, rewritten after every pack, realign and vet) | as they are by v2 / v3.0.0 (they can't mark names); not read by newer launchers |
 | `untrimmed\transferred\raw\` | what E-Sys Plus showed for newer, trimmed CAFD versions (E-Sys 3.35.3 dumps), with the reference it used | never: input for `realign` |
 | `untrimmed\transferred\raw\byindex\` | E-Sys Plus's references read directly by function index for every CAFD version (Inspelning's E-Sys Plus 3.8.1 dumps, [discussion #9](https://github.com/shamair28/OpenCAFDMap/discussions/9)): rows `kind address reference function_index value_hex name`, kinds H (group), N (function), P (value), A (a value the reference has no name for) | never: input for `realign` |
 | `untrimmed\transferred\<CAFD id>.tsv.gz` | E-Sys Plus's reference names put back on the fields they belong to (`realign`) | always ending in ` (?)` |

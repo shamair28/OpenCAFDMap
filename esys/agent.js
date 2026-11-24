@@ -174,7 +174,7 @@
 
   // Untrimmed names packed by datagroup layout (ocm/untrimmed.py), applied at runtime to whatever is still a
   // placeholder, so versions that were never exported get names too:
-  //   definitions/untrimmed/<CAFD id>.tsv.gz              BMW's own names (res.groups)
+  //   definitions/untrimmed/bmw/<CAFD id>.tsv.gz          BMW's own names (res.groups)
   //   definitions/untrimmed/transferred/<CAFD id>.tsv.gz  names from E-Sys Plus's reference CAFDs, put back on the
   //                                                       layouts they were made for (ocm/untrimmed.py realign),
   //                                                       matched by field (res.tpos, transferMatch); always
@@ -202,7 +202,8 @@
     var res = null;
     try {
       var dir = CONTRIB_DIR ? new File(CONTRIB_DIR, "untrimmed") : null;
-      var f = dir ? new File(dir, cafId + ".tsv.gz") : null;
+      // bmw/: BMW's own names. The top folder holds the pack for v2 / v3.0.0 (with realigned names unmarked): not read.
+      var f = dir ? new File(new File(dir, "bmw"), cafId + ".tsv.gz") : null;
       var tf = dir ? new File(new File(dir, "transferred"), cafId + ".tsv.gz") : null;
       if ((f && f.exists()) || (tf && tf.exists())) {
         res = { groups: {}, tgroups: {}, fallback: {} };

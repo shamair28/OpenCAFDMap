@@ -6,6 +6,7 @@ byte 4 mask 0xFE split into 0x02 + 0xFC; the other fields keep their names).
 
 Synthetic package and DB only: no psdzdata, no decrypted CAFDs."""
 import glob
+import gzip
 import os
 import shutil
 import sqlite3
@@ -84,7 +85,7 @@ class ApplyUntrimmed(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="ocm-untrimmed-")
         key, g = pack_group(PACKED, PACKED)
-        quiet(U.save, CID, {key: g}, {"3000": "Applikation"}, self.tmp)
+        quiet(U.save, CID, {key: g}, {"3000": "Applikation"}, os.path.join(self.tmp, "bmw"))
         self.con = sqlite3.connect(":memory:")
         self.con.executescript(B.SCHEMA)
 
@@ -199,8 +200,10 @@ class Realign(unittest.TestCase):
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="ocm-realign-")
-        self.dirs = {n: getattr(U, n) for n in ("PACK_DIR", "TRANSFERRED_DIR", "REJECTED_DIR", "RAW_DIR", "BYINDEX_DIR")}
-        U.PACK_DIR = self.tmp
+        self.dirs = {n: getattr(U, n) for n in ("COMPAT_DIR", "PACK_DIR", "TRANSFERRED_DIR", "REJECTED_DIR", "RAW_DIR",
+                                                "BYINDEX_DIR")}
+        U.COMPAT_DIR = self.tmp
+        U.PACK_DIR = os.path.join(self.tmp, "bmw")
         U.TRANSFERRED_DIR = os.path.join(self.tmp, "transferred")
         U.REJECTED_DIR = os.path.join(U.TRANSFERRED_DIR, "rejected")
         U.RAW_DIR = os.path.join(U.TRANSFERRED_DIR, "raw")
@@ -365,6 +368,33 @@ class MarkUnverified(unittest.TestCase):
             self.assertEqual(got, {"008_044_021": "FROM_DEF", "008_044_022": "FROM_DEF" + U.UNVERIFIED})
             con.close()
         finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
+class Compat(unittest.TestCase):
+    """The top-level pack for v2 / v3.0.0: BMW's own names plus realigned ones, BMW's own winning, G/F/V only."""
+    def test_merge(self):
+        tmp = tempfile.mkdtemp(prefix="ocm-compat-")
+        saved = {n: getattr(U, n) for n in ("COMPAT_DIR", "PACK_DIR", "TRANSFERRED_DIR")}
+        try:
+            U.COMPAT_DIR, U.PACK_DIR, U.TRANSFERRED_DIR = tmp, os.path.join(tmp, "bmw"), os.path.join(tmp, "transferred")
+            key, g = pack_group(PACKED, PACKED)
+            quiet(U.save, CID, {key: g}, {"3000": "Applikation"}, U.PACK_DIR)
+            t = U.entry()
+            t["S"] = "116_064_000"
+            t["F"] = {(3, 3, "00000001b"): "OTHER", (5, 5, "00000001b"): "NEW_FEATURE"}
+            t["R"] = {(5, 5, "00000001b"): {"abc"}}
+            quiet(U.save, CID, {key: t}, {"3001": "Fallback"}, U.TRANSFERRED_DIR)
+            U.compat(CID)
+            out, fb = U.load(CID, U.COMPAT_DIR)
+            self.assertEqual(out[key]["F"][(3, 3, "00000001b")], "Sportschalter")   # BMW's own wins
+            self.assertEqual(out[key]["F"][(5, 5, "00000001b")], "NEW_FEATURE")
+            self.assertEqual(fb, {"3000": "Applikation", "3001": "Fallback"})
+            raw = gzip.open(os.path.join(tmp, f"{CID}.tsv.gz"), "rt", encoding="utf-8").read()
+            self.assertFalse(any(l[:2] in ("R	", "S	") for l in raw.splitlines()))   # old launchers: G/F/V only
+        finally:
+            for n, v in saved.items():
+                setattr(U, n, v)
             shutil.rmtree(tmp, ignore_errors=True)
 
 
