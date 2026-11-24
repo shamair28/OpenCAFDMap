@@ -148,5 +148,192 @@ class ApplyUntrimmed(unittest.TestCase):
                                                                           "01": "wert_02 [n/a here]"}))
 
 
+class Vet(unittest.TestCase):
+    """Transferred (E-Sys Plus) rows against BMW's own names and against each other."""
+    def test_rules(self):
+        bmw = dict([pack_group(PACKED, PACKED)])
+        lay = [(3, 3, "00000001b"), (3, 3, "00000110b"), (3, 3, "00001000b"), (3, 3, "00010000b"),
+               (3, 3, "00100000b"), (3, 3, "11000000b")]
+        h = U.layout_hash(lay)
+        other = U.layout_hash(lay[:2])
+        tr = {("3000", h): {"G": None, "V": {}, "F": {
+            (3, 3, "00000001b"): "Sportschalter",        # 1 bit, like BMW's own: kept
+            (3, 3, "00000110b"): "Allrad",               # BMW's own Allrad is 1 bit: rejected
+            (3, 3, "00001000b"): "DUP", (3, 3, "00010000b"): "DUP",   # one name on two fields: both rejected
+            (3, 3, "00100000b"): "UNBELEGT", (3, 3, "11000000b"): "UNBELEGT"}},   # reserved: never a conflict
+              ("3000", other): {"G": None, "V": {}, "F": {(3, 3, "00000110b"): "WIDE"}}}
+        tr[("3000", h)]["F"][(3, 3, "11000000b")] = "WIDE"   # 2 bits here, 2 bits there: kept
+        tr[("3000", other)]["F"][(3, 3, "00000001b")] = "NARROW"
+        tr[("3000", h)]["F"][(3, 3, "00100000b")] = "NARROW"
+        tr[("3000", other)]["F"][(3, 3, "00000110b")] = "WIDE"
+        bad, same = U.vet_rows(bmw, tr)
+        self.assertNotIn(("3000", h, (3, 3, "00000001b")), bad)
+        self.assertIn("another size", bad[("3000", h, (3, 3, "00000110b"))])
+        self.assertIn("more than one field", bad[("3000", h, (3, 3, "00001000b"))])
+        self.assertNotIn(("3000", h, (3, 3, "11000000b")), bad)
+        self.assertNotIn(("3000", h, (3, 3, "00100000b")), bad)   # NARROW: 1 bit in both layouts
+        self.assertEqual(same, set())
+
+    def test_names_on_other_versions_are_not_checked_against_each_other(self):
+        # realigned names sit on their reference's own layout; two references may size a field differently
+        a = U.layout_hash([(5, 5, "00000001b")])
+        b = U.layout_hash([(5, 5, "00011111b")])
+        tr = {("3000", a): {"G": None, "V": {}, "F": {(5, 5, "00000001b"): "SPEEDLOCK_SPEEDVALUE_MIN"}},
+              ("3000", b): {"G": None, "V": {}, "F": {(5, 5, "00011111b"): "SPEEDLOCK_SPEEDVALUE_MIN"}}}
+        bad, _ = U.vet_rows({}, tr)
+        self.assertEqual(bad, {})
+
+
+class Realign(unittest.TestCase):
+    """E-Sys Plus names function #i after its reference's function #i (discussion #9). realign() finds the layout
+    the reference was made for and puts the names back on their fields."""
+    # the reference layout: 4 functions; a newer version inserts a 3-bit field at byte 0 bits 1-3
+    REF = [((0, 0, "00000001b"), ["00", "01"], "A_FLAG"), ((1, 1, "00011111b"), ["00", "03", "06"], "SPEED_MIN"),
+           ((2, 2, "00111111b"), ["00", "05", "08"], "SPEED_MAX"), ((3, 3, "00000001b"), ["00", "01"], "B_FLAG")]
+    NEW = [((0, 0, "00000001b"), ["00", "01"]), ((0, 0, "00001110b"), ["00", "01", "02"]),
+           ((1, 1, "00011111b"), ["00", "03", "06"]), ((2, 2, "00111111b"), ["00", "05", "08"]),
+           ((3, 3, "00000001b"), ["00", "01"])]
+    VALS = {"A_FLAG": {"00": "nicht_aktiv", "01": "aktiv"}, "SPEED_MIN": {"00": "aus", "03": "3_kmh", "06": "6_kmh"},
+            "SPEED_MAX": {"00": "aus", "05": "5_kmh", "08": "8_kmh"}, "B_FLAG": {"00": "nicht_aktiv", "01": "aktiv"}}
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix="ocm-realign-")
+        self.dirs = {n: getattr(U, n) for n in ("PACK_DIR", "TRANSFERRED_DIR", "REJECTED_DIR", "RAW_DIR")}
+        U.PACK_DIR = self.tmp
+        U.TRANSFERRED_DIR = os.path.join(self.tmp, "transferred")
+        U.REJECTED_DIR = os.path.join(U.TRANSFERRED_DIR, "rejected")
+        U.RAW_DIR = os.path.join(U.TRANSFERRED_DIR, "raw")
+        names = [n for _, _, n in self.REF]
+        raw = {}
+        for lay in (self.REF, self.NEW):            # E-Sys Plus's dump of both: names by index
+            e = U.entry()
+            e["S"] = "150_130_000"
+            for i, (k, codes, *_r) in enumerate(lay):
+                if i < len(names):
+                    e["F"][k] = names[i]
+                    for x in codes:
+                        if x in self.VALS[names[i]]:
+                            e["V"][k + (x,)] = self.VALS[names[i]][x]
+            raw[("3000", U.layout_hash([f[0] for f in lay]))] = e
+        quiet(U.save, CID, raw, {}, U.RAW_DIR)
+        pr = lambda codes: U.rule_print([(x, "") for x in codes])  # noqa: E731
+        self.layouts = {"3000": {U.layout_hash([f[0] for f in lay]): [(k, frozenset(c), {pr(c)}) for k, c, *_r in lay]
+                                 for lay in (self.REF, self.NEW)}}
+
+    def tearDown(self):
+        for n, v in self.dirs.items():
+            setattr(U, n, v)
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_names_go_back_on_their_fields(self):
+        quiet(U.realign_cid, CID, self.layouts)
+        g, _ = U.load(CID, U.TRANSFERRED_DIR)
+        (key, e), = g.items()
+        self.assertEqual(key[1], U.layout_hash([f[0] for f in self.REF]))     # the reference's own layout
+        self.assertEqual(e["S"], "150_130_000")
+        self.assertEqual(e["F"][(1, 1, "00011111b")], "SPEED_MIN")
+        idx = U.transfer_index(g)
+        # the newer version: SPEED_MIN stays on its 5-bit field (E-Sys Plus put it on the new 3-bit one)
+        self.assertEqual(U.transfer_match(idx, "3000", 1, 1, "00011111b", {"00", "03", "06"})[0], "SPEED_MIN")
+        self.assertIsNone(U.transfer_match(idx, "3000", 0, 0, "00001110b", {"00", "01", "02"}))
+        # flags need the same rule print
+        same = U.rule_print([("00", ""), ("01", "")])
+        self.assertEqual(U.transfer_match(idx, "3000", 3, 3, "00000001b", {"00", "01"}, same)[0], "B_FLAG")
+        self.assertIsNone(U.transfer_match(idx, "3000", 3, 3, "00000001b", {"00", "01"}, "other"))
+        self.assertIsNone(U.transfer_match(idx, "3000", 3, 3, "00000001b", {"00", "01"}))
+
+    def test_no_reference_layout_no_names(self):
+        del self.layouts["3000"][U.layout_hash([f[0] for f in self.REF])]
+        n = quiet(U.realign_cid, CID, self.layouts)
+        self.assertEqual(n["groups whose reference layout isn't in the definition DBs"], 1)
+        g, _ = U.load(CID, U.TRANSFERRED_DIR)
+        self.assertFalse(any(e["F"] for e in g.values()))
+
+    def test_marks(self):
+        self.assertEqual(U.mark("X"), "X" + U.UNVERIFIED)
+        self.assertEqual(U.mark(U.mark("X")), "X" + U.UNVERIFIED)
+        self.assertEqual(U.unmark(U.mark("X")), "X")
+
+
+class ApplyTransferred(ApplyUntrimmed):
+    """definitions/untrimmed/transferred: E-Sys Plus's names, never shown as verified."""
+    def setUp(self):
+        super().setUp()
+        lay = [(s, e, m, list(v)) for s, e, m, _, v in PACKED] + [(5, 5, "00000001b", ["00", "01"]),
+                                                                 (5, 5, "00000010b", ["00", "01"])]
+        self.layout = lay
+        names = PACKED + [(5, 5, "00000001b", "NEW_FEATURE", {"00": "nicht_aktiv", "01": "aktiv"}),
+                          (5, 5, "00000010b", "HALF_NAMED", {"00": "nicht_aktiv"})]
+        key, g = pack_group(lay, names)
+        for k in [k for k in g["F"] if k[0] != 5]:      # E-Sys Plus rows only for byte 5
+            del g["F"][k]
+        g["V"] = {k: v for k, v in g["V"].items() if k[0] == 5}
+        # rule prints of the reference's functions (the synthetic DB has no rules: '' for every value)
+        g["R"] = {k: {U.rule_print([(x, "") for x in codes])} for k, codes in
+                  (((5, 5, "00000001b"), ["00", "01"]), ((5, 5, "00000010b"), ["00", "01"]))}
+        quiet(U.save, CID, {key: g}, {}, os.path.join(self.tmp, "transferred"))
+
+    def test_transferred_names_are_marked_and_need_every_value_name(self):
+        cpk = self.add_cafd(self.layout, "009_000_001")
+        quiet(B.apply_untrimmed, self.con, self.tmp)
+        n = self.names(cpk)
+        self.assertEqual(n[(5, 5, "00000001b")][:2], ("NEW_FEATURE" + U.UNVERIFIED, "transferred"))
+        self.assertEqual(n[(5, 5, "00000001b")][2]["01"], "wert_02 aktiv [n/a here]")
+        # value 01 has no transferred name: E-Sys Plus's field had other values, so the name isn't used at all
+        self.assertEqual(n[(5, 5, "00000010b")][:2], ("3000_5_5_2", "derived"))
+        comment = self.con.execute("SELECT comment FROM func WHERE cafd_pk=? AND start=5 AND mask='00000001b'",
+                                   (cpk,)).fetchone()[0]
+        self.assertEqual(comment, U.TRANSFER_NOTE)
+
+    def test_verified_names_are_never_replaced(self):
+        cpk = self.add_cafd(self.layout, "009_000_001",
+                            named={(5, 5, "00000001b"): ("MINE", "contributed")})
+        quiet(B.apply_untrimmed, self.con, self.tmp)
+        self.assertEqual(self.names(cpk)[(5, 5, "00000001b")][:2], ("MINE", "contributed"))
+
+    def test_unverified_names_give_way(self):
+        cpk = self.add_cafd(self.layout, "009_000_001",
+                            named={(5, 5, "00000001b"): ("SHEET_NAME" + U.UNVERIFIED, "cheatsheet")})
+        quiet(B.apply_untrimmed, self.con, self.tmp)
+        self.assertEqual(self.names(cpk)[(5, 5, "00000001b")][:2], ("NEW_FEATURE" + U.UNVERIFIED, "transferred"))
+
+    def test_bmw_name_on_a_reused_field_is_marked(self):
+        # BMW's own layout names only 00 (initwert) for byte 3 0xFC; here it also has 01: reused, so marked
+        lay = [(s, e, m, list(v)) for s, e, m, _, v in PACKED]
+        lay[2] = (3, 3, "11111100b", ["00", "01"])
+        cpk = self.add_cafd(lay, "008_044_023")
+        quiet(B.apply_untrimmed, self.con, self.tmp)
+        n = self.names(cpk)
+        self.assertEqual(n[(3, 3, "11111100b")][:2], ("UNBELEGT" + U.UNVERIFIED, "untrimmed"))
+        self.assertEqual(n[(4, 4, "00000001b")][:2], ("AGS_US", "untrimmed"))
+
+
+class MarkUnverified(unittest.TestCase):
+    def test_definition_counts_only_for_its_own_version(self):
+        tmp = tempfile.mkdtemp(prefix="ocm-mark-")
+        try:
+            p = os.path.join(tmp, "CAFD_00002458_008_044_021.xml")
+            with open(p, "w", encoding="utf-8") as f:
+                f.write(f'<CafdDefinition cafdId="{CID}" mainVersion="008" subVersion="044" patchVersion="021" '
+                        'source="t"><Group id="3000"><Function name="FROM_DEF" start="4" end="4" '
+                        'mask="00000001b"/></Group></CafdDefinition>')
+            con = sqlite3.connect(":memory:")
+            con.executescript(B.SCHEMA)
+            for ver in ("008_044_021", "008_044_022"):
+                m, s_, pt = (int(x) for x in ver.split("_"))
+                cpk = con.execute("INSERT INTO cafd(cafd_id, main, sub, patch, version) VALUES(?,?,?,?,?)",
+                                  (CID, m, s_, pt, ver)).lastrowid
+                dpk = con.execute("INSERT INTO datagroup(cafd_pk, address) VALUES(?, '3000')", (cpk,)).lastrowid
+                con.execute("INSERT INTO func(cafd_pk, dg_pk, address, idx, start, end, mask, name, name_source) "
+                            "VALUES(?,?,'3000',0,4,4,'00000001b','x','derived')", (cpk, dpk))
+            con.executemany(B.OVERRIDE_INSERT, B.load_definition_xmls([p]))
+            quiet(B.apply_overrides, con)
+            got = dict(con.execute("SELECT c.version, f.name FROM func f JOIN cafd c ON c.pk=f.cafd_pk"))
+            self.assertEqual(got, {"008_044_021": "FROM_DEF", "008_044_022": "FROM_DEF" + U.UNVERIFIED})
+            con.close()
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
 if __name__ == "__main__":
     unittest.main()

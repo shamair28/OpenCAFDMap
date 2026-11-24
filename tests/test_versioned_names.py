@@ -104,7 +104,8 @@ class Apply(unittest.TestCase):
             [CID, "3072", "", "", "", "", "NoVersions", "skipped", ""]]), scoped=True)
         self.assertEqual(len(scoped), 4)                                   # the row without versions is skipped
         self.apply(every + scoped)
-        self.assertEqual(self.names("052_008_000"), (None, "TM_OLD_NAME", "wert_01 [x]"))
+        # an every-version name isn't checked for any one version: marked unverified; the scoped one is not
+        self.assertEqual(self.names("052_008_000"), (None, "TM_OLD_NAME (?)", "wert_01 [x]"))
         self.assertEqual(self.names("062_010_106"), ("NewGroup", "EM_NEW_NAME", "wert_01 aktiv [x]"))
         self.assertEqual(self.names("062_010_106", "3072")[0], "LaMaster0")
         self.assertIsNone(self.names("052_008_000", "3072")[0])

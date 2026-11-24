@@ -547,6 +547,11 @@ def load_definition_xmls(paths):
         except ValueError as e:
             print(f"  skip {p}: versions: {e}", file=sys.stderr)
             continue
+        own = [root.get(k) for k in ("mainVersion", "subVersion", "patchVersion")]
+        if not root.get("versions") and all(x and x.isdigit() for x in own):
+            # made from one CAFD version: still applies to every version, but counts as verified only on its own
+            # (a scoped row of the same name wins there, see mark_unverified)
+            scope = scope + [(versions.key(*own), versions.key(*own))]
         rows = []
         cid = (root.get("cafdId") or "").upper().zfill(8)
         src_note = root.get("source") or root.get("author") or os.path.basename(p)
@@ -626,77 +631,159 @@ UNTRIMMED_DIR = os.path.join(config.CONTRIB, "untrimmed")
 
 
 def apply_untrimmed(con, folder):
-    r"""definitions\untrimmed\<CAFD id>.tsv.gz (ocm\untrimmed.py): BMW's untrimmed names keyed by datagroup layout.
-    Every datagroup here whose layout hash matches gets the names (group names also by address as a fallback).
-    Beats contributed definitions, cheat sheets and placeholders; my_names.tsv and names\*.tsv still win.
-    Functions still unnamed after that fall back to an exact field match, marked as unverified
-    (apply_untrimmed_fields, issue #8).
-    Set-based: a few joins, not one UPDATE per name."""
+    r"""definitions\untrimmed\ (ocm\untrimmed.py), keyed by datagroup layout:
+    - <id>.tsv.gz: BMW's own names (psdzdata that still carried them). Every datagroup whose layout hash matches
+      gets them (group names also by address as a fallback). Beats contributed definitions, cheat sheets and
+      placeholders; my_names.tsv and names\*.tsv still win. A function with value codes that layout doesn't name
+      (a reserved bit reused) keeps the name but marked unverified (VALUES_NOTE).
+    - transferred\<id>.tsv.gz: names from E-Sys Plus's reference CAFDs, realigned onto the layouts they were made
+      for (untrimmed.realign). Matched by field (apply_transferred, untrimmed.transfer_match), only for functions
+      that are still placeholders or carry an unverified name, always marked unverified (TRANSFER_NOTE).
+    Functions still unnamed after that fall back to an exact field match of BMW's own names, marked as unverified
+    (apply_untrimmed_fields, issue #8). Set-based: a few joins, not one UPDATE per name."""
     import untrimmed as U
+    tdir = os.path.join(folder, "transferred") if folder else None
     files = glob.glob(os.path.join(folder, "*.tsv.gz")) if folder and os.path.isdir(folder) else []
-    if not files:
+    tfiles = glob.glob(os.path.join(tdir, "*.tsv.gz")) if tdir and os.path.isdir(tdir) else []
+    if not files and not tfiles:
         return
     con.executescript("""
         DROP TABLE IF EXISTS temp.dg_hash; DROP TABLE IF EXISTS temp.u_g; DROP TABLE IF EXISTS temp.u_f;
         DROP TABLE IF EXISTS temp.u_v;
         CREATE TEMP TABLE dg_hash(dg_pk INTEGER PRIMARY KEY, hash TEXT);
-        CREATE TEMP TABLE u_g(cafd_id TEXT, address TEXT, hash TEXT, name TEXT);
-        CREATE TEMP TABLE u_f(cafd_id TEXT, address TEXT, hash TEXT, start INT, end INT, mask TEXT, name TEXT);
-        CREATE TEMP TABLE u_v(cafd_id TEXT, address TEXT, hash TEXT, start INT, end INT, mask TEXT, hex TEXT, name TEXT);
+        -- t: 0 = BMW's own name, 1 = transferred
+        CREATE TEMP TABLE u_g(cafd_id TEXT, address TEXT, hash TEXT, name TEXT, t INT);
+        CREATE TEMP TABLE u_f(cafd_id TEXT, address TEXT, hash TEXT, start INT, end INT, mask TEXT, name TEXT, t INT);
+        CREATE TEMP TABLE u_v(cafd_id TEXT, address TEXT, hash TEXT, start INT, end INT, mask TEXT, hex TEXT, name TEXT,
+                              t INT);
     """)
-    ids = [os.path.basename(p)[:8].upper() for p in files]
     present = {r[0] for r in con.execute("SELECT DISTINCT cafd_id FROM cafd")}
-    fidx = {}
+    ids = sorted({os.path.basename(p)[:8].upper() for p in files + tfiles} & present)
+    fidx, tidx = {}, {}
     for cid in ids:
-        groups, fallback = U.load(cid, folder)
-        if cid in present:
-            fidx[cid] = U.field_index(groups)
-        con.executemany("INSERT INTO u_g VALUES(?,?,?,?)", [(cid, a, "*", n) for a, n in fallback.items()]
-                        + [(cid, a, h, g["G"]) for (a, h), g in groups.items() if g["G"]])
-        con.executemany("INSERT INTO u_f VALUES(?,?,?,?,?,?,?)",
-                        [(cid, a, h, *k, n) for (a, h), g in groups.items() for k, n in g["F"].items()])
-        con.executemany("INSERT INTO u_v VALUES(?,?,?,?,?,?,?,?)",
-                        [(cid, a, h, *k, n) for (a, h), g in groups.items() for k, n in g["V"].items()])
+        for t, d in ((0, folder), (1, tdir)):
+            groups, fallback = U.load(cid, d)
+            con.executemany("INSERT INTO u_g VALUES(?,?,?,?,?)", [(cid, a, "*", n, t) for a, n in fallback.items()]
+                            + [(cid, a, h, g["G"], t) for (a, h), g in groups.items() if g["G"]])
+            if t == 1:
+                tidx[cid] = U.transfer_index(groups)    # applied by field, not by layout (apply_transferred)
+                continue
+            fidx[cid] = U.field_index(groups)           # the field fallback borrows BMW's own names only
+            con.executemany("INSERT INTO u_f VALUES(?,?,?,?,?,?,?,?)",
+                            [(cid, a, h, *k, n, t) for (a, h), g in groups.items() for k, n in g["F"].items()])
+            con.executemany("INSERT INTO u_v VALUES(?,?,?,?,?,?,?,?,?)",
+                            [(cid, a, h, *k, n, t) for (a, h), g in groups.items() for k, n in g["V"].items()])
         rows = defaultdict(list)
         for dpk, st, en, mk in con.execute(
                 "SELECT f.dg_pk, f.start, f.end, f.mask FROM func f JOIN cafd c ON c.pk=f.cafd_pk "
                 "WHERE c.cafd_id=? ORDER BY f.dg_pk, f.idx", (cid,)):
             rows[dpk].append((st, en, mk))
         con.executemany("INSERT INTO dg_hash VALUES(?,?)", [(d, U.layout_hash(l)) for d, l in rows.items()])
+    sql_text = lambda s: s.replace("'", "''")  # noqa: E731
     con.executescript("""
         CREATE INDEX temp.ix_ug ON u_g(cafd_id, address, hash);
         CREATE INDEX temp.ix_uf ON u_f(cafd_id, address, hash, start, end, mask);
         CREATE INDEX temp.ix_uv ON u_v(cafd_id, address, hash, start, end, mask, hex);
         UPDATE datagroup SET name = coalesce(
               (SELECT u.name FROM u_g u JOIN cafd c ON c.cafd_id=u.cafd_id JOIN dg_hash h ON h.dg_pk=datagroup.pk
-               WHERE c.pk=datagroup.cafd_pk AND u.address=datagroup.address AND u.hash=h.hash),
+               WHERE c.pk=datagroup.cafd_pk AND u.address=datagroup.address AND u.hash=h.hash ORDER BY u.t),
               (SELECT u.name FROM u_g u JOIN cafd c ON c.cafd_id=u.cafd_id
-               WHERE c.pk=datagroup.cafd_pk AND u.address=datagroup.address AND u.hash='*')),
+               WHERE c.pk=datagroup.cafd_pk AND u.address=datagroup.address AND u.hash='*' ORDER BY u.t)),
             name_source='untrimmed'
          WHERE coalesce(name_source, '') NOT IN ('local', 'community')
            AND EXISTS (SELECT 1 FROM u_g u JOIN cafd c ON c.cafd_id=u.cafd_id
                        WHERE c.pk=datagroup.cafd_pk AND u.address=datagroup.address);
-        UPDATE func SET name = u.name, name_source = 'untrimmed'
+        -- BMW's own names
+        UPDATE func SET name = u.name, name_source = 'untrimmed', comment = @KEEP@
           FROM dg_hash h, cafd c, u_f u
          WHERE h.dg_pk = func.dg_pk AND c.pk = func.cafd_pk AND u.cafd_id = c.cafd_id AND u.address = func.address
-           AND u.hash = h.hash AND u.start = func.start AND u.end = func.end AND u.mask = lower(func.mask)
+           AND u.hash = h.hash AND u.start = func.start AND u.end = func.end AND u.mask = lower(func.mask) AND u.t = 0
            AND func.name_source NOT IN ('local', 'community');
+        -- ... where that layout names some of this function's value codes, but not all: the field may be reused
+        UPDATE func SET name = name || '@MARK@', comment = coalesce(comment || ' | ', '') || '@VALUES_NOTE@'
+         WHERE name_source = 'untrimmed' AND EXISTS (
+               SELECT 1 FROM val v, dg_hash h, cafd c, u_f u WHERE v.func_pk = func.pk AND h.dg_pk = func.dg_pk
+                  AND c.pk = func.cafd_pk AND u.cafd_id = c.cafd_id AND u.address = func.address AND u.hash = h.hash
+                  AND u.start = func.start AND u.end = func.end AND u.mask = lower(func.mask) AND u.t = 0
+                  AND EXISTS (SELECT 1 FROM u_v w WHERE w.cafd_id = u.cafd_id AND w.address = u.address
+                              AND w.hash = u.hash AND w.start = u.start AND w.end = u.end AND w.mask = u.mask
+                              AND w.t = 0)
+                  AND NOT EXISTS (SELECT 1 FROM u_v w WHERE w.cafd_id = u.cafd_id AND w.address = u.address
+                              AND w.hash = u.hash AND w.start = u.start AND w.end = u.end AND w.mask = u.mask
+                              AND w.hex = upper(v.hex) AND w.t = 0));
         -- value names keep the value number and rule hint: "wert_02 nicht_aktiv [SA5AC]"
         UPDATE val SET label = 'wert_' || printf('%02d', val.idx + 1) || ' ' || u.name ||
                  CASE WHEN instr(val.label, '[') > 0 THEN ' ' || substr(val.label, instr(val.label, '[')) ELSE '' END,
-               label_source = 'untrimmed'
+               label_source = 'untrimmed\'
           FROM func f, dg_hash h, cafd c, u_v u
          WHERE f.pk = val.func_pk AND h.dg_pk = f.dg_pk AND c.pk = f.cafd_pk AND u.cafd_id = c.cafd_id
            AND u.address = f.address AND u.hash = h.hash AND u.start = f.start AND u.end = f.end
-           AND u.mask = lower(f.mask) AND u.hex = val.hex AND val.label_source NOT IN ('local', 'community');
-    """)
+           AND u.mask = lower(f.mask) AND u.hex = val.hex AND val.label_source NOT IN ('local', 'community')
+           AND u.t = 0;
+    """.replace("@KEEP@", KEEP_COMMENT).replace("@MARK@", sql_text(U.UNVERIFIED)).replace("@VALUES_NOTE@", sql_text(U.VALUES_NOTE))
+       .replace("@TRANSFER_NOTE@", sql_text(U.TRANSFER_NOTE)))
+    apply_transferred(con, tidx)
     apply_untrimmed_fields(con, fidx)
+    mark = sql_text(U.UNVERIFIED)
     n = [con.execute(f"SELECT count(*) FROM {t} WHERE {c}='untrimmed'").fetchone()[0]
          for t, c in (("datagroup", "name_source"), ("func", "name_source"), ("val", "label_source"))]
+    nm = con.execute(f"SELECT count(*) FROM func WHERE name_source='untrimmed' AND name LIKE '%{mark}'").fetchone()[0]
+    tr = [con.execute(f"SELECT count(*) FROM {t} WHERE {c}='transferred'").fetchone()[0]
+          for t, c in (("func", "name_source"), ("val", "label_source"))]
     p = [con.execute(f"SELECT count(*) FROM {t} WHERE {c}='untrimmed-pos'").fetchone()[0]
          for t, c in (("func", "name_source"), ("val", "label_source"))]
-    print(f"  untrimmed names ({len(ids)} CAFD ids): {n[0]} groups, {n[1]} functions, {n[2]} values named"
-          + (f"; by field position (marked{U.POS_MARK}): {p[0]} functions, {p[1]} values" if any(p) else ""))
+    print(f"  BMW untrimmed names ({len(ids)} CAFD ids): {n[0]} groups, {n[1]} functions"
+          + (f" ({nm} marked{U.UNVERIFIED}: value codes that layout doesn't name)" if nm else "")
+          + f", {n[2]} values named"
+          + (f"; by field position (marked{U.POS_MARK}): {p[0]} functions, {p[1]} values" if any(p) else "")
+          + (f"; transferred by E-Sys Plus (marked{U.UNVERIFIED}): {tr[0]} functions, {tr[1]} values" if any(tr) else ""))
+
+
+def strip_unverified_note(comment):
+    """comment without the note mark_unverified appended (when another source replaces that name)."""
+    c = comment or ""
+    if " | Name from " in c:
+        return c[:c.index(" | Name from ")]
+    return "" if c.startswith("Name from ") else c
+
+
+def apply_transferred(con, tidx):
+    r"""Names from E-Sys Plus's reference CAFDs (definitions\untrimmed\transferred, realigned): a function that is
+    still a placeholder or carries an unverified name gets one when the same field (address, start, end, mask) is
+    named there, every one of its value codes has a value name, and, for on/off flags and reserved bits, its coding
+    rules print the same (untrimmed.transfer_match). Always marked unverified, with TRANSFER_NOTE."""
+    import untrimmed as U
+    fupd, vupd = [], []
+    for cid, idx in tidx.items():
+        if not idx:
+            continue
+        vals = defaultdict(list)
+        for fpk, vpk, vi, hx, label, lsrc, raw in con.execute(
+                "SELECT v.func_pk, v.pk, v.idx, upper(v.hex), v.label, v.label_source, coalesce(r.raw, '') FROM val v "
+                "JOIN func f ON f.pk=v.func_pk JOIN cafd c ON c.pk=f.cafd_pk LEFT JOIN rule r ON r.id=v.rule_id "
+                "WHERE c.cafd_id=? AND v.hex IS NOT NULL", (cid,)):
+            vals[fpk].append((vpk, vi, hx, label, lsrc, raw))
+        for fpk, addr, st, en, mk, name, src, cmt in con.execute(
+                "SELECT f.pk, f.address, f.start, f.end, f.mask, f.name, f.name_source, f.comment FROM func f "
+                "JOIN cafd c ON c.pk=f.cafd_pk WHERE c.cafd_id=? AND (f.name_source='derived' OR "
+                "(f.name_source IN ('contributed', 'sheet', 'cheatsheet', 'legacy') AND f.name LIKE ?))",
+                (cid, "%" + U.UNVERIFIED)).fetchall():
+            if (addr, st, en, U.norm_mask(mk)) not in idx:
+                continue
+            v = vals.get(fpk, [])
+            m = U.transfer_match(idx, addr, st, en, mk, {x[2] for x in v},
+                                 U.rule_print([(x[2], x[5]) for x in v]))
+            if not m:
+                continue
+            n, vnames = m
+            keep = strip_unverified_note(cmt) if src != "derived" else ""
+            fupd.append((U.mark(n), " | ".join(x for x in (keep, U.TRANSFER_NOTE) if x), fpk))
+            for vpk, vi, hx, label, lsrc, _raw in v:
+                if lsrc not in ("local", "community") and hx in vnames:
+                    hint = label[label.index("["):] if label and "[" in label else ""
+                    vupd.append((f"wert_{vi + 1:02d} {vnames[hx]}" + (f" {hint}" if hint else ""), vpk))
+    con.executemany("UPDATE func SET name=?, name_source='transferred', comment=? WHERE pk=?", fupd)
+    con.executemany("UPDATE val SET label=?, label_source='transferred' WHERE pk=?", vupd)
 
 
 def apply_untrimmed_fields(con, fidx):
@@ -723,7 +810,7 @@ def apply_untrimmed_fields(con, fidx):
             name, vnames = m
             if src == "derived":
                 fupd.append((name + U.POS_MARK, " | ".join(x for x in (cmt, U.POS_NOTE) if x), fpk))
-            elif (fname or "").strip().lower() != name.strip().lower():
+            elif U.unmark(fname).lower() != name.strip().lower():
                 continue
             for vpk, vi, hx, label, src in vals:
                 if src == "derived" and hx in vnames:
@@ -790,7 +877,36 @@ def apply_overrides(con):
                          .replace("PRIO", PRIO))
     n = con.execute("SELECT count(*) FROM name_override").fetchone()[0]
     print(f"  {n} name overrides applied")
+    mark_unverified(con)
     bmw_placeholders(con)
+
+
+UNVERIFIED_NOTE = "Name from {} for any version of this CAFD, not checked for this version: unverified"
+# func.comment without the note mark_unverified appended (when another source replaces that name)
+KEEP_COMMENT = ("CASE WHEN instr(func.comment, ' | Name from ') > 0 THEN substr(func.comment, 1, "
+                "instr(func.comment, ' | Name from ') - 1) WHEN func.comment LIKE 'Name from %' THEN NULL "
+                "ELSE func.comment END")
+SOURCE_LABEL = {"community": "a names file", "contributed": "a contributed definition", "sheet": "a cheat sheet",
+                "cheatsheet": "a cheat sheet", "legacy": "a legacy names file"}
+
+
+def mark_unverified(con):
+    r"""A function name counts as verified for a CAFD version only when its row says it holds for that version:
+    my_names.tsv (your own), names\versioned\*.tsv, versions="..." on a contributed definition, or the version a
+    contributed definition was made from. Every other override name (names\*.tsv, cheat sheets, legacy names,
+    other versions of a definition) is a guess by field position for this version, like a transferred untrimmed
+    name: it gets untrimmed.UNVERIFIED and a note saying where it came from."""
+    import untrimmed as U
+    proven = ("EXISTS (SELECT 1 FROM name_override o JOIN cafd c ON c.cafd_id=o.cafd_id AND " + VER_MATCH +
+              " WHERE c.pk=func.cafd_pk AND o.address=func.address AND o.start=func.start AND o.end=func.end"
+              " AND o.mask=func.mask AND o.value_hex IS NULL AND o.name=func.name AND o.source=func.name_source"
+              " AND NOT " + SCOPED_FIRST + ")")
+    rows = con.execute("SELECT pk, name, name_source, comment FROM func WHERE name_source IN "
+                       "('community', 'contributed', 'sheet', 'cheatsheet', 'legacy') AND NOT " + proven).fetchall()
+    con.executemany("UPDATE func SET name=?, comment=? WHERE pk=?",
+                    [(U.mark(n), " | ".join(x for x in (c, UNVERIFIED_NOTE.format(SOURCE_LABEL[s])) if x), pk)
+                     for pk, n, s, c in rows])
+    print(f"  {len(rows)} names from names files, definitions and cheat sheets marked unverified{U.UNVERIFIED}")
 
 
 def bmw_placeholders(con):

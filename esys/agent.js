@@ -172,44 +172,61 @@
     }}));
   }
 
-  // BMW untrimmed names packed by datagroup layout (definitions/untrimmed/<CAFD id>.tsv.gz, ocm/untrimmed.py).
-  // Applied at runtime to whatever is still a placeholder, so versions that were never exported get names too.
+  // Untrimmed names packed by datagroup layout (ocm/untrimmed.py), applied at runtime to whatever is still a
+  // placeholder, so versions that were never exported get names too:
+  //   definitions/untrimmed/<CAFD id>.tsv.gz              BMW's own names (res.groups)
+  //   definitions/untrimmed/transferred/<CAFD id>.tsv.gz  names from E-Sys Plus's reference CAFDs, put back on the
+  //                                                       layouts they were made for (ocm/untrimmed.py realign),
+  //                                                       matched by field (res.tpos, transferMatch); always
+  //                                                       marked unverified
   var untrimmedCache = {};
+  function readPack(f, groups, fallback) {
+    var br = new java.io.BufferedReader(new java.io.InputStreamReader(
+      new java.util.zip.GZIPInputStream(new java.io.FileInputStream(f)), "UTF-8"));
+    var line;
+    while ((line = br.readLine()) !== null) {
+      line = String(line);
+      if (!line || line.charAt(0) === "#") continue;
+      var p = line.split("\t");
+      if (p[0] === "G" && p[2] === "*") { if (!fallback.hasOwnProperty(p[1])) fallback[p[1]] = p[7]; continue; }
+      var key = p[1] + "|" + p[2];
+      var g = groups[key] || (groups[key] = { G: null, F: {}, V: {} });
+      if (p[0] === "G") g.G = p[7];
+      else if (p[0] === "F") g.F[p[3] + "|" + p[4] + "|" + p[5]] = p[7];
+      else if (p[0] === "V") g.V[p[3] + "|" + p[4] + "|" + p[5] + "|" + p[6]] = p[7];
+    }
+    br.close();
+  }
   function loadUntrimmed(cafId) {
     if (untrimmedCache.hasOwnProperty(cafId)) return untrimmedCache[cafId];
     var res = null;
     try {
-      var f = CONTRIB_DIR ? new File(new File(CONTRIB_DIR, "untrimmed"), cafId + ".tsv.gz") : null;
-      if (f && f.exists()) {
-        res = { groups: {}, fallback: {} };
-        var br = new java.io.BufferedReader(new java.io.InputStreamReader(
-          new java.util.zip.GZIPInputStream(new java.io.FileInputStream(f)), "UTF-8"));
-        var line;
-        while ((line = br.readLine()) !== null) {
-          line = String(line);
-          if (!line || line.charAt(0) === "#") continue;
-          var p = line.split("\t");
-          if (p[0] === "G" && p[2] === "*") { res.fallback[p[1]] = p[7]; continue; }
-          var key = p[1] + "|" + p[2];
-          var g = res.groups[key] || (res.groups[key] = { G: null, F: {}, V: {} });
-          if (p[0] === "G") g.G = p[7];
-          else if (p[0] === "F") g.F[p[3] + "|" + p[4] + "|" + p[5]] = p[7];
-          else if (p[0] === "V") g.V[p[3] + "|" + p[4] + "|" + p[5] + "|" + p[6]] = p[7];
-        }
-        br.close();
-        // field index for the fallback below: "addr|start|end|mask" -> [{n: name, v: {hex: value name}}], one per layout
-        res.pos = {};
-        for (var gk in res.groups) {
-          var ug = res.groups[gk], ga = gk.split("|")[0], byF = {};
-          for (var vk in ug.V) {
-            var vp = vk.split("|"), fk = vp[0] + "|" + vp[1] + "|" + vp[2];
-            (byF[fk] || (byF[fk] = {}))[vp[3].toUpperCase()] = ug.V[vk];
+      var dir = CONTRIB_DIR ? new File(CONTRIB_DIR, "untrimmed") : null;
+      var f = dir ? new File(dir, cafId + ".tsv.gz") : null;
+      var tf = dir ? new File(new File(dir, "transferred"), cafId + ".tsv.gz") : null;
+      if ((f && f.exists()) || (tf && tf.exists())) {
+        res = { groups: {}, tgroups: {}, fallback: {} };
+        if (f.exists()) readPack(f, res.groups, res.fallback);
+        if (tf.exists()) readPack(tf, res.tgroups, res.fallback);   // BMW's own group names come first
+        // field indexes: "addr|start|end|mask" -> [{n: name, v: {hex: value name}}], one per layout:
+        // res.pos (BMW's own names, field fallback below) and res.tpos (realigned transferred names)
+        var fieldIndex = function (groups) {
+          var idx = {};
+          for (var gk in groups) {
+            var ug = groups[gk], ga = gk.split("|")[0], byF = {};
+            for (var vk in ug.V) {
+              var vp = vk.split("|"), fk = vp[0] + "|" + vp[1] + "|" + vp[2];
+              (byF[fk] || (byF[fk] = {}))[vp[3].toUpperCase()] = ug.V[vk];
+            }
+            for (var fk2 in ug.F) {
+              var pk = ga + "|" + fk2;
+              (idx[pk] || (idx[pk] = [])).push({ n: ug.F[fk2], v: byF[fk2] || {} });
+            }
           }
-          for (var fk2 in ug.F) {
-            var pk = ga + "|" + fk2;
-            (res.pos[pk] || (res.pos[pk] = [])).push({ n: ug.F[fk2], v: byF[fk2] || {} });
-          }
-        }
+          return idx;
+        };
+        res.pos = fieldIndex(res.groups);
+        res.tpos = fieldIndex(res.tgroups);
       }
     } catch (eU) {
       log("Error reading untrimmed names for CAFD_" + cafId + ": " + eU);
@@ -222,9 +239,46 @@
   // Field fallback (same rule as ocm/untrimmed.py field_match, issue #8) for groups whose layout isn't packaged:
   // the layouts with exactly this address/start/end/mask that name no value code the function lacks must all agree.
   // A guess (BMW reassigns bits between versions), so the name gets POS_MARK. -> {n, v: {hex: value name}} or null
-  var POS_MARK = " (?)";
+  var POS_MARK = " (?)";   // = untrimmed.UNVERIFIED: every name not proven for this CAFD version ends in it
   var POS_NOTE = "BMW untrimmed name from another version of this CAFD, matched by field position only "
     + "(this group's layout isn't packaged): unverified";
+  var TRANSFER_NOTE = "Name from E-Sys Plus's reference CAFD, matched to this version by field, value codes and coding "
+    + "rules; not BMW's own name for this version: unverified, check before coding";
+  var VALUES_NOTE = "BMW name from a version with the same layout, but this function has value codes that version "
+    + "doesn't name (the field may have been reused): unverified";
+  // Realigned transferred name for a field (ocm/untrimmed.py transfer_match), or null. Every reference layout
+  // naming exactly this field that names all its value codes must agree. On/off flags and reserved bits (no more
+  // than FLAG_CODES value codes) also need the same coding-rule print, which only the definition build can compute:
+  // here they stay placeholders until the on-demand definition arrives.
+  var FLAG_CODES = 2;
+  function transferMatch(uPack, addr, uKey, hexes) {
+    var cand = (uPack && uPack.tpos) ? uPack.tpos[addr + "|" + uKey] : null;
+    var n = 0;
+    for (var h0 in hexes) n++;
+    if (!cand || n <= FLAG_CODES) return null;
+    var name = null, vals = null;
+    for (var i = 0; i < cand.length; i++) {
+      var ok = true;
+      for (var h in hexes) if (!cand[i].v[h]) { ok = false; break; }
+      if (!ok) continue;
+      if (name !== null && name.toUpperCase() !== cand[i].n.toUpperCase()) return null;
+      if (name === null) { name = cand[i].n; vals = cand[i].v; }
+    }
+    return name === null ? null : { n: name, v: vals };
+  }
+
+  // Does the packaged group g name a value for every code in hexes ({HEX: true})? Same rules as
+  // build_defdb.apply_untrimmed: a transferred name needs them all (strict); BMW's own layout only when it names
+  // values for this field at all.
+  function namesValues(g, uKey, hexes, strict) {
+    if (!strict) {
+      var any = false;
+      for (var vk in g.V) if (vk.indexOf(uKey + "|") === 0) { any = true; break; }
+      if (!any) return true;
+    }
+    for (var h in hexes) if (!g.V[uKey + "|" + h]) return false;
+    return true;
+  }
   function fieldMatch(uPack, addr, uKey, hexes) {
     var cand = (uPack && uPack.pos) ? uPack.pos[addr + "|" + uKey] : null;
     if (!cand) return null;
@@ -387,6 +441,7 @@
     var uPack = loadUntrimmed(cafId);
     var untrimmedHits = 0;
     var posHits = 0;
+    var transferHits = 0;
     var fnCounter = 1;
     var grpRenamed = 0;
     var fnRenamed = 0;
@@ -406,12 +461,16 @@
         grpRenamed++;
       }
 
-      var uG = null;
+      var uG = null, tG = null;     // tG: a transferred reference layout identical to this one (group name only)
       if (uPack) {
         var uFns = dg.getFunction();
-        if (uFns && uFns.size() > 0) uG = uPack.groups[addr + "|" + layoutHash(uFns)] || null;
+        if (uFns && uFns.size() > 0) {
+          var uH = addr + "|" + layoutHash(uFns);
+          uG = uPack.groups[uH] || null;
+          tG = uPack.tgroups[uH] || null;
+        }
         if (isPlaceholder(dg.getName())) {
-          var uGName = (uG && uG.G) || uPack.fallback[addr];
+          var uGName = (uG && uG.G) || (tG && tG.G) || uPack.fallback[addr];
           if (uGName) { dg.setName(uGName); untrimmedHits++; }
         }
       }
@@ -460,21 +519,35 @@
             fnRenamed++;
           }
           var uKey = start + "|" + end + "|" + normMask(maskStr);
-          var posMatch = null;
-          if (uG && uG.F[uKey] && isPlaceholder(fn.getName())) {
-            fn.setName(uG.F[uKey]);
-            untrimmedHits++;
-          } else if (uPack && !(uG && uG.F[uKey])) {
-            var cpsH = fn.getCondParam(), fnHexes = {};
+          var posMatch = null, vG = uG;     // vG: the package group whose value names this function uses
+          var fnHexes = {};
+          if (uPack) {
+            var cpsH = fn.getCondParam();
             if (cpsH) for (var kh = 0; kh < cpsH.size(); kh++) {
               var hh = extractTValueHex(cpsH.get(kh).getValues());
               if (hh) fnHexes[String(hh).toUpperCase()] = true;
             }
+          }
+          var addNote = function (note) {
+            var oc = fn.getComment() ? String(fn.getComment()) : "";
+            fn.setComment(oc ? oc + " | " + note : note);
+          };
+          if (uG && uG.F[uKey] && isPlaceholder(fn.getName())) {
+            if (namesValues(uG, uKey, fnHexes, false)) fn.setName(uG.F[uKey]);
+            else { fn.setName(uG.F[uKey] + POS_MARK); addNote(VALUES_NOTE); }
+            untrimmedHits++;
+          } else if (!(uG && uG.F[uKey]) && isPlaceholder(fn.getName())
+                     && (posMatch = transferMatch(uPack, addr, uKey, fnHexes))) {
+            fn.setName(posMatch.n + POS_MARK);   // posMatch.v now holds its value names
+            addNote(TRANSFER_NOTE);
+            vG = null;
+            untrimmedHits++;
+            transferHits++;
+          } else if (uPack && !(uG && uG.F[uKey])) {
             posMatch = fieldMatch(uPack, addr, uKey, fnHexes);
             if (posMatch && isPlaceholder(fn.getName())) {
               fn.setName(posMatch.n + POS_MARK);
-              var oldC = fn.getComment() ? String(fn.getComment()) : "";
-              fn.setComment(oldC ? oldC + " | " + POS_NOTE : POS_NOTE);
+              addNote(POS_NOTE);
               untrimmedHits++;
               posHits++;
             } else if (posMatch && String(fn.getName()).toLowerCase() !== posMatch.n.toLowerCase()
@@ -511,7 +584,7 @@
               }
 
               var finalLabel = customLabel ? customLabel : defaultWertLabel;
-              var uVal = (uG && cpHex) ? uG.V[uKey + "|" + cpHex] : null;
+              var uVal = (vG && cpHex) ? vG.V[uKey + "|" + cpHex] : null;
               if (!uVal && posMatch && cpHex) uVal = posMatch.v[String(cpHex).toUpperCase()] || null;
               if (uVal && isPlaceholder(finalLabel)) {
                 var hintAt = finalLabel.indexOf("[");
@@ -552,7 +625,8 @@
     dumpSb.append('</CafdDefinition>\r\n');
 
     var stats = " (groups=" + grpRenamed + ", fns=" + fnRenamed + ", values=" + cpRenamed + ", read=" + interpUpdated
-      + ", untrimmed=" + untrimmedHits + (posHits ? " incl. " + posHits + " by field position" : "") + ")";
+      + ", untrimmed=" + untrimmedHits + (posHits ? " incl. " + posHits + " by field position" : "")
+      + (transferHits ? " incl. " + transferHits + " transferred (unverified)" : "") + ")";
     var pending = runtimeState.get(tag) === "pending" ? "; full labels follow once its definition is built" : "";
     if (!def && untrimmedHits) log("Labelled " + tag + " from untrimmed names only" + stats + pending);
     else if (!def) log("No definition for " + tag + (pending || ": press Build definitions, or see runtime_defs.log"));

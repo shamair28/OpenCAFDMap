@@ -3,7 +3,7 @@
 Open CAFD Map gets better with every name someone adds. There are three ways to contribute:
 
 - **A few lines in a `names\<ECU>.tsv` file.** Best for names you found yourself, or to fix or fill in anything the untrimmed names lack. These files win over every other source; the format is below.
-- **Untrimmed dumps.** If you have untrimmed CAFD definitions (XML with every function, like the dumps in `definitions\untrimmed\` were made from), run `python ocm\untrimmed.py pack-dumps <folder>`. For decrypted CAFDs from a psdzdata old enough to still carry its names, run `python ocm\untrimmed.py pack-caf <folder>` instead. Both merge into `definitions\untrimmed\<CAFD id>.tsv.gz` by layout and never remove existing names. Open a pull request with the changed `.tsv.gz` files.
+- **Untrimmed names.** For decrypted CAFDs from a psdzdata old enough to still carry BMW's own names (PSdZData 54.1 and older), run `python ocm\untrimmed.py pack-caf <folder>`: they go into `definitions\untrimmed\<CAFD id>.tsv.gz` and are shown as they are. For E-Sys 3.35.3 dumps (XML with every function), run `python ocm\untrimmed.py pack-dumps <folder>`: E-Sys Plus looks those names up by position in its own reference CAFDs, so they go into `definitions\untrimmed\transferred\raw\` as they are, and the maintainer's `realign` step puts them back on the right fields; they're always shown as unverified ` (?)` ([definitions/README.md](definitions/README.md#3-untrimmed-untrimmed-names)). Dumps of every reference a CAFD has, including the version each reference was made for, help most. Packing merges by layout and never removes existing names. Open a pull request with the changed `.tsv.gz` files.
 - **Whole files in `definitions\`**: definition XMLs (`<CafdDefinition>`) or FDL cheat sheets (`<FDL>`) you already have. See [definitions/README.md](definitions/README.md). Their names are merged automatically. A definition XML also covers people whose psdzdata lacks that CAFD version.
 
 ## The format
@@ -55,6 +55,7 @@ cafd_id   address  start  end  mask       value_hex  name                       
 - The folder is separate on purpose: launchers older than this feature ignore it instead of applying a versioned name to every version.
 - Contributed definition XMLs take the same ranges as `versions="..."` on `<CafdDefinition>`.
 - Dumps that have a name for *every* function of a CAFD version (E-Sys Plus, untrimmed files) fit even better as untrimmed packages (`pack-dumps`, above): those are keyed by each group's exact layout, so they only ever apply where the layout matches.
+- A row in `names\<ECU>.tsv` (no versions) applies to every version, but it's only known to be right on the versions someone checked. So it's shown with ` (?)` ("not checked for this version"). Put the versions you checked in `names\versioned\` and it's shown without the mark there.
 
 ## Where names come from
 - **BimmerCode backup diffs.** Take a backup, change one option in BimmerCode, take another backup, then run:

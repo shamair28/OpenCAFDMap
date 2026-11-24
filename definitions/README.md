@@ -17,12 +17,12 @@ The format the agent reads, used by `export_defs.py` and older hand-made definit
 ```
 
 - **File name:**
-  - `CAFD_<id>_<main>_<sub>_<patch>.xml` for one software version.
+  - `CAFD_<id>_<main>_<sub>_<patch>.xml` for one software version. Its names are shown as verified on that version (from `mainVersion` / `subVersion` / `patchVersion` on the root) and with ` (?)` on every other one, unless `versions="..."` says where they hold.
   - `CAFD_<id>.xml` for a file that applies to every version. With no exact match, functions are matched on start/end bytes.
 - **How it's used:**
   - *Names*: every real group, function and value name in it is imported for all versions that have the same address, bytes and mask, or only for the CAFD versions in an optional `versions="..."` on `<CafdDefinition>` (same ranges as `names\versioned\`: `062-`, `-052`, `052-061`, `062_010_106`; see [CONTRIBUTING.md](../CONTRIBUTING.md#names-for-some-cafd-versions-only)). Placeholders like `Group_3000` / `PfFesMaster_9_9_255` and derived labels like `wert_02 [SA5AC]` are ignored. `wert_02 aktiv [SA5AC]` gives the value name `aktiv`.
   - *Fallback*: if someone's psdzdata doesn't have that CAFD version, E-Sys uses the contributed file directly.
-- **Priority:** names files (`names\*.tsv`) > BMW untrimmed names (`untrimmed\`) > contributed definitions > `names\cheatsheet\*.tsv` > cheat sheets > legacy names. Your private `my_names.tsv` always wins.
+- **Priority:** names files (`names\*.tsv`) > BMW's own untrimmed names (`untrimmed\`) > contributed definitions > E-Sys Plus's transferred names (`untrimmed\transferred\`, only over placeholders and other unverified names) > `names\cheatsheet\*.tsv` > cheat sheets > legacy names. Your private `my_names.tsv` always wins. A name not proven for the CAFD version you open ends in ` (?)` (section 3).
 - **Making one:**
   - Export from your build: `python ocm\export_defs.py --ids 000043AF --latest 0 --out definitions\FLM2`.
   - Or hand-write one for the functions you know.
@@ -41,16 +41,59 @@ FDL cheat-sheet XMLs (`<FDL><cafd id><code description><group id><function start
   The check rejects psdzdata files and VINs.
 - **Licence:** only submit files you have the right to share. A file keeps any licence stated in it (e.g. GPL-3.0 for many community cheat sheets). Files without one are contributed under CC0 like `names\`.
 
-## 3. `untrimmed\`: BMW's untrimmed names
-`untrimmed\<CAFD id>.tsv.gz`, one file per CAFD id, written by `ocm\untrimmed.py`. Each row is `kind address layout_hash start end mask value_hex name`:
-- **kind** is G (group), F (function) or V (value).
+## 3. `untrimmed\`: untrimmed names
+Written by `ocm\untrimmed.py`, one file per CAFD id in each folder:
+
+| Folder | What it holds | How it's shown |
+|---|---|---|
+| `untrimmed\<CAFD id>.tsv.gz` | BMW's own names, read from psdzdata old enough to still carry them (PSdZData 54.1 and older) | as they are |
+| `untrimmed\transferred\raw\` | what E-Sys Plus showed for newer, trimmed CAFD versions (E-Sys 3.35.3 dumps), with the reference it used | never: input for `realign` |
+| `untrimmed\transferred\<CAFD id>.tsv.gz` | E-Sys Plus's reference names put back on the fields they belong to (`realign`) | always ending in ` (?)` |
+| `untrimmed\transferred\rejected\` | realigned names that contradict BMW's own, with the reason in a 9th column | never |
+
+Each row is `kind address layout_hash start end mask value_hex name`:
+- **kind** is G (group), F (function), V (value), R (a function's coding-rule print, in `name`) or S (the E-Sys Plus reference a raw layout came from, in `name`).
 - **layout_hash** identifies the datagroup's exact function layout. A G row with `*` gives that address's group name for any layout.
 
-Names apply where a datagroup's layout matches exactly. When a CAFD version has a layout that isn't packaged
-(for example one field split in two), each of its functions can still borrow a name from a packaged layout with
-exactly the same address, start, end and mask. All such layouts must agree on the name, and none may name a value
-code the function doesn't have. Borrowed names end in ` (?)`: BMW sometimes reassigns bits between versions
-without moving them, so treat them as unverified and confirm them before coding. Names in `my_names.tsv`,
-`names\*.tsv`, contributed definitions and cheat sheets take priority.
+**Why E-Sys Plus's names need realigning.** BMW trimmed every name from PSdZData 54.2 on. E-Sys Plus shows names for
+newer versions from reference CAFDs of its own, and it looks them up *by position*: "function 13 of group 3001"
+([discussion #9](https://github.com/shamair28/OpenCAFDMap/discussions/9)). A reference fits only the layout it was
+made for. Wherever BMW inserted or removed a function earlier in the group, every later name lands on the wrong
+field: in 00001EF6 006\_064\_014 (HU\_NBT\_EVO), 37 new functions in group 3000 push `SPEEDLOCK_SPEEDVALUE_MIN` onto
+a 1-bit field and `AKD_DRIVING_TEXT_LENGTH` onto a 13-byte one. Across the dumps, about a fifth of E-Sys Plus's
+names sat on the wrong field.
 
-To add dumps, run `python ocm\untrimmed.py pack-dumps <folder>`. It only adds names, never removes them, and the check validates every row.
+**How `realign` fixes it** (`python ocm\untrimmed.py realign <definition DBs>`, run by the maintainer with DBs that
+hold every version, e.g. `workspace\cafd_defs_G020.sqlite`):
+1. Rebuild each reference's names by position from the dumps of every version that used it.
+2. Find the version whose layout the reference was made for: function by function, it has every value code E-Sys
+   Pro named for that position and none it couldn't name.
+3. Store the names on that layout's fields, with each function's value names and coding-rule print.
+
+A CAFD version then gets a transferred name only for a field with the same address, start, end and mask whose
+every value code has a value name there; on/off flags and reserved bits (two value codes or fewer, which can't
+tell fields apart) also need the same coding rules. Checked against BMW's own names where both exist, 279 of 280
+came out right. Groups whose reference layout isn't in the DBs get no transferred names at all.
+
+Transferred names stay marked ` (?)`: they are E-Sys Plus's names, placed by this matching, not BMW's own names for
+your version. **What gets rejected** (`python ocm\untrimmed.py vet`, run after every realign or pack): a name BMW's
+own names give a field of another size in this CAFD, a name the reference gives two fields of one layout, and a
+field BMW's own package names differently in the same layout. `UNBELEGT`, `Padding*` and other reserved-bit names
+are exempt from the size rule.
+
+BMW's own names apply where a datagroup's layout matches exactly. One whose layout matches but which doesn't name
+every value code the function has here (a reserved bit that became a feature) is marked ` (?)` too. When a CAFD
+version has a layout that isn't packaged (for example one field split in two), each of its functions can still
+borrow BMW's own name from a packaged layout with exactly the same address, start, end and mask. All such layouts
+must agree on the name, and none may name a value code the function doesn't have. Borrowed names end in ` (?)`
+as well.
+
+**` (?)` everywhere means: not proven for this CAFD version, check before coding.** Besides transferred and
+borrowed untrimmed names, it marks names from `names\*.tsv`, cheat sheets and contributed definitions on versions
+they weren't made for. Names in `my_names.tsv`, `names\versioned\` rows and definitions on their own version
+(`versions="..."`, or the version in the file) aren't marked.
+
+To add names: `python ocm\untrimmed.py pack-caf <folder>` for decrypted psdzdata CAFDs that still carry their names
+(BMW's own). For E-Sys 3.35.3 dumps: `python ocm\untrimmed.py pack-dumps <folder>` (into `raw\`), then `realign`.
+Dumps of every reference a CAFD has, and of the version each reference was made for, help most. Packing only adds
+names; the check validates every row.

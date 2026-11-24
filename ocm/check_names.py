@@ -115,7 +115,8 @@ DEF_NAME = re.compile(r"^CAFD_([0-9A-F]{8})(?:_(\d{3})_(\d{3})_(\d{3}))?\.xml$",
 
 
 def check_untrimmed(path, errors, warnings):
-    r"""definitions\untrimmed\<CAFD id>.tsv.gz (ocm\untrimmed.py): kind address layout_hash start end mask value_hex name."""
+    r"""definitions\untrimmed\[transferred\[rejected\]]<CAFD id>.tsv.gz (ocm\untrimmed.py):
+    kind address layout_hash start end mask value_hex name [reason: rejected\ only]."""
     import gzip
     rel = relpath(path)
     if not re.fullmatch(r"[0-9A-F]{8}\.tsv\.gz", os.path.basename(path)):
@@ -130,8 +131,16 @@ def check_untrimmed(path, errors, warnings):
             f = (line.rstrip("\r\n").split("\t") + [""] * 8)[:8]
             kind, addr, h, st, en, mask, vhex, name = f
             where = f"{rel}:{ln}"
-            if kind not in ("G", "F", "V") or not ADDR.match(addr) or not name:
-                errors.append(f"{where}: expected G/F/V, a 4-hex address and a name")
+            if kind not in ("G", "F", "V", "R", "S") or not ADDR.match(addr) or not name:
+                errors.append(f"{where}: expected G/F/V/R/S, a 4-hex address and a name")
+            elif kind == "R" and not re.fullmatch(r"[0-9a-f]{12}", name):
+                errors.append(f"{where}: an R row's name is a 12-digit rule print (ocm\\untrimmed.py rule_print)")
+            elif kind == "S" and not re.fullmatch(r"\d{3}_\d{3}_\d{3}", name):
+                errors.append(f"{where}: an S row's name is the E-Sys Plus reference version (150_130_000)")
+            elif kind in ("R", "S"):
+                if kind == "R" and (not st.isdigit() or not en.isdigit() or not MASK.match(mask)):
+                    errors.append(f"{where}: start/end must be byte numbers and mask like 00000001b")
+                continue
             elif not (h == "*" and kind == "G") and not re.fullmatch(r"[0-9a-f]{16}", h):
                 errors.append(f"{where}: layout hash must be 16 lower-case hex digits (see ocm\\untrimmed.py)")
             elif kind != "G" and (not st.isdigit() or not en.isdigit() or not MASK.match(mask)):
@@ -250,7 +259,10 @@ def main():
                         + sorted(glob.glob(os.path.join(config.NAMES, "versioned", "*.tsv")))
                         + sorted(glob.glob(os.path.join(config.NAMES, "cheatsheet", "*.tsv")))
                         + sorted(glob.glob(os.path.join(config.CONTRIB, "**", "*.xml"), recursive=True))
-                        + sorted(glob.glob(os.path.join(config.CONTRIB, "untrimmed", "*.tsv.gz"))))
+                        + sorted(glob.glob(os.path.join(config.CONTRIB, "untrimmed", "*.tsv.gz")))
+                        + sorted(glob.glob(os.path.join(config.CONTRIB, "untrimmed", "transferred", "*.tsv.gz")))
+                        + sorted(glob.glob(os.path.join(config.CONTRIB, "untrimmed", "transferred", "rejected",
+                                                        "*.tsv.gz"))))
     errors, warnings, keys, scoped_keys = [], [], {}, {}
     n_xml = n_xml_fn = n_untr = 0
     for p in files:
