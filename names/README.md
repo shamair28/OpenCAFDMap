@@ -5,7 +5,7 @@ Community names for trimmed CAFD groups, functions and values. There's one file 
 - Format and how to contribute: [../CONTRIBUTING.md](../CONTRIBUTING.md)
 - Priority when two sources disagree:
   1. your private `workspace\my_names.tsv`
-  2. these files, and `versioned\*.tsv` for names that hold only for some CAFD versions (a 9th column, `versions`). For the versions it covers, a versioned row beats a row here.
+  2. these files, and `versioned\*.tsv` for names that hold only for some CAFD versions (a 9th column, `versions`; applied by the next v3, ignored by OpenLauncher v3.0.0). For the versions it covers, a versioned row beats a row here.
   3. BMW's untrimmed names (`definitions\untrimmed\`)
   4. contributed definition XMLs (`definitions\`)
   5. `cheatsheet\*.tsv`: names taken from a cheat sheet that can't be shipped ([cheatsheet/README.md](cheatsheet/README.md))

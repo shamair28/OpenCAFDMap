@@ -29,7 +29,7 @@ cafd_id   address  start  end  mask       value_hex  name                    com
 - **name**: BMW's own name if you know it (`FesSportPlusMode`, `INBAND_RINGING`). Otherwise a short, clear description.
 - **comment**: **where the name comes from** (screenshot of tool X, BimmerCode diff, coding table, forum thread). This lets others judge and verify it.
 
-A row in `names\<ECU>.tsv` applies to every version of that CAFD that has a function with exactly that address, byte range and mask.
+A row in `names\<ECU>.tsv` applies to every version of that CAFD that has a function with exactly that address, byte range and mask. For names that hold only for some versions, see below.
 
 ### Names for some CAFD versions only
 When a group or function changes meaning between CAFD versions (a datagroup rebuilt in a new main version, a bit reused), put those rows in **`names\versioned\<ECU>.tsv`** with a 9th column, **versions**:
@@ -51,9 +51,9 @@ cafd_id   address  start  end  mask       value_hex  name                       
 | `-040, 062-` | several ranges, comma separated |
 
 - A versioned row wins over an every-version row of the same source for the versions it covers, so `names\<ECU>.tsv` can keep the common name and `names\versioned\` holds the exceptions.
-- Versioned rows for the same function may not overlap with different names; **Check contributions** reports it.
-- The folder is separate on purpose: launchers older than this feature ignore it instead of applying a versioned name to every version.
-- Contributed definition XMLs take the same ranges as `versions="..."` on `<CafdDefinition>`.
+- Versioned rows for the same function may not overlap with different names; **Check contributions** reports it, and so does the check on every pull request.
+- The folder is separate on purpose: launchers that don't know the column ignore it instead of applying a versioned name to every version. OpenLauncher v3.0.0 is one of them; the next v3 (the previews built from `v3-testing`) applies these files. Send them here anyway: every launcher downloads names from `main`.
+- Contributed definition XMLs take the same ranges as `versions="..."` on `<CafdDefinition>` (checked here too; applied by the same launchers).
 - Dumps that have a name for *every* function of a CAFD version (E-Sys Plus, untrimmed files) fit even better as untrimmed packages (`pack-dumps`, above): those are keyed by each group's exact layout, so they only ever apply where the layout matches.
 - A row in `names\<ECU>.tsv` (no versions) applies to every version, but it's only known to be right on the versions someone checked. So it's shown with ` (?)` ("not checked for this version"). Put the versions you checked in `names\versioned\` and it's shown without the mark there.
 
